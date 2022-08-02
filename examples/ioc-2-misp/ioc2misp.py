@@ -45,10 +45,11 @@ def get_parse_ioc_file():
 
 
 def parse_ioc_search_content(iocContextSearch):
-        for k, v in iocMispMapping.items():
-                if str(k).lower() == str(iocContextSearch).lower():
-                        return v
-        return False
+        return next(
+            (v for k, v in iocMispMapping.items()
+             if str(k).lower() == str(iocContextSearch).lower()),
+            False,
+        )
 
 
 def create_attribute_json(iocContextSearch, attributeValue, attributeComment, force=False):
@@ -72,15 +73,15 @@ def create_attribute_json(iocContextSearch, attributeValue, attributeComment, fo
         except:
                 comment = attributeComment
 
-        attribute = {"category": parseResult[0],
-                     "type": parseResult[1],
-                     "value": attributeValue,
-                     "timestamp": "0",
-                     "to_ids": "0",
-                     "distribution": "0",
-                     "comment": comment
-                     }
-        return attribute
+        return {
+            "category": parseResult[0],
+            "type": parseResult[1],
+            "value": attributeValue,
+            "timestamp": "0",
+            "to_ids": "0",
+            "distribution": "0",
+            "comment": comment,
+        }
 
 
 def create_attributes_from_ioc_json(soup):
@@ -125,11 +126,9 @@ def create_misp_event_json(attributes):
                 if iocDescriptions["description"]:
                         attributes.append(create_attribute_json(None, "description", iocDescriptions["description"], True))
         else:
-                if iocDescriptions["description"]:
-                        mispInfoFild = iocDescriptions["description"]
-                else:
-                        mispInfoFild = "No description or short_description from IOC find."
-
+                mispInfoFild = (
+                    iocDescriptions["description"]
+                    or "No description or short_description from IOC find.")
         eventJson = {"Event": {"info": mispInfoFild,
                                "timestamp": "1",
                                "attribute_count": 0,
@@ -176,7 +175,7 @@ def get_taxonomy(soup):
         #               1 : tag created
         #       r[3] = @taxonomy
 
-        csvdic = {i: r for i, r in enumerate(reader)}
+        csvdic = dict(enumerate(reader))
 
         #########################################
         # find all link with soup
@@ -188,21 +187,18 @@ def get_taxonomy(soup):
                 # special string because link if a html value
                 relValue = str(n.next_sibling).strip()
                 if rel == 'family':
-                        if len(relValue) > 0:
+                        if relValue != "":
                                 taxonomy.append("malware_classification:malware-family='" + relValue + "'")
                 elif rel == 'threatgroup':
-                        if len(relValue) > 0:
+                        if relValue != "":
                                 taxonomy.append("malware_classification:malware-threatgroup='" + relValue + "'")
 
-                #########################
-                # build taxo from csv match
                 else:
                         taxo = [r[3] for r in {i: r for i, r in csvdic.items() if r[0].lower() == rel and str(r[2]) == "1"}.values() if r[1].lower() == relValue.lower() and str(r[2]) == "1"]
 
                         # taxo find in correspondance file
-                        if (len(taxo) > 0 and taxo[0] != ''):
+                        if taxo and taxo[0] != '':
                                 taxonomy.append(taxo[0])
-                        # not find
         return taxonomy
 
 
@@ -263,8 +259,7 @@ def update_tag(listOfTagg):
                 misp.new_tag(str(tagg), str(color))
                 #############################
                 # link tag to MISP event
-                toPost = {}
-                toPost['Event'] = {'id': iocDescriptions["misp_event_id"]}
+                toPost = {'Event': {'id': iocDescriptions["misp_event_id"]}}
                 misp.add_tag(toPost, str(tagg))
         return
 

@@ -12,7 +12,7 @@ def randomStringGenerator(size, chars=string.ascii_lowercase + string.digits):
 
 
 def randomIpGenerator():
-    return str(randint(0, 255)) + '.' + str(randint(0, 255)) + '.' + str(randint(0, 255)) + '.' + str(randint(0, 255))
+    return f'{str(randint(0, 255))}.{str(randint(0, 255))}.{str(randint(0, 255))}.{str(randint(0, 255))}'
 
 
 def _attribute(category, type, value):
@@ -40,7 +40,7 @@ def floodip(misp, event):
 def flooddomain(misp, event, maxlength=25):
     a = randomStringGenerator(randint(1, maxlength))
     b = randomStringGenerator(randint(2, 3), chars=string.ascii_lowercase)
-    domain = a + '.' + b
+    domain = f'{a}.{b}'
     choose_from = [('Network activity', 'domain', domain), ('Network activity', 'hostname', domain)]
     misp.add_attribute(event, _attribute(*random.choice(choose_from)))
 
@@ -49,7 +49,7 @@ def floodemail(misp, event, maxlength=25):
     a = randomStringGenerator(randint(1, maxlength))
     b = randomStringGenerator(randint(1, maxlength))
     c = randomStringGenerator(randint(2, 3), chars=string.ascii_lowercase)
-    email = a + '@' + b + '.' + c
+    email = f'{a}@{b}.{c}'
     choose_from = [('Network activity', 'email-dst', email), ('Network activity', 'email-src', email)]
     misp.add_attribute(event, _attribute(*random.choice(choose_from)))
 
@@ -67,5 +67,5 @@ def create_massive_dummy_events(misp, nbattribute):
     event = misp.add_event(event)
     print(event)
     functions = [floodtxt, floodip, flooddomain, floodemail]
-    for i in range(nbattribute):
+    for _ in range(nbattribute):
         functions[random.randint(0, len(functions) - 1)](misp, event)

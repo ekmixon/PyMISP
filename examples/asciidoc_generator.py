@@ -14,7 +14,7 @@ class ReportGenerator():
     def __init__(self, profile="daily_report"):
         self.taxonomies = Taxonomies()
         self.report = ''
-        profile_name = "profiles.{}".format(profile)
+        profile_name = f"profiles.{profile}"
         self.template = importlib.import_module(name=profile_name)
 
     def from_remote(self, event_id):
@@ -32,15 +32,17 @@ class ReportGenerator():
     def attributes(self):
         if not self.misp_event.attributes:
             return ''
-        list_attributes = []
-        for attribute in self.misp_event.attributes:
-            if attribute.type in self.template.types_to_attach:
-                list_attributes.append("* {}".format(defang(attribute.value)))
+        list_attributes = [
+            f"* {defang(attribute.value)}"
+            for attribute in self.misp_event.attributes
+            if attribute.type in self.template.types_to_attach
+        ]
+
         for obj in self.misp_event.Object:
             if obj.name in self.template.objects_to_attach:
                 for attribute in obj.Attribute:
                     if attribute.type in self.template.types_to_attach:
-                        list_attributes.append("* {}".format(defang(attribute.value)))
+                        list_attributes.append(f"* {defang(attribute.value)}")
         return self.template.attributes.format(list_attributes="\n".join(list_attributes))
 
     def _get_tag_info(self, machinetag):
@@ -70,7 +72,7 @@ class ReportGenerator():
             for a in obj.Attribute:
                 if a.object_relation == 'case-number':
                     internal_id = a.value
-                if a.object_relation == 'summary':
+                elif a.object_relation == 'summary':
                     summary = a.value
 
         return self.template.title.format(internal_id=internal_id, title=self.misp_event.info,

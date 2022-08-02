@@ -28,14 +28,16 @@ from_time = to_time - timedelta(**time_interval)
 to_time = datetime_to_millis(to_time)
 from_time = datetime_to_millis(from_time)
 
-if not enclave_ids:
-    reports = tru.get_reports(from_time=from_time,
-                              to_time=to_time)
-else:
-    reports = tru.get_reports(from_time=from_time,
-                          to_time=to_time,
-                          is_enclave=True,
-                          enclave_ids=enclave_ids)
+reports = (
+    tru.get_reports(
+        from_time=from_time,
+        to_time=to_time,
+        is_enclave=True,
+        enclave_ids=enclave_ids,
+    )
+    if enclave_ids
+    else tru.get_reports(from_time=from_time, to_time=to_time)
+)
 
 # loop through each trustar report and create MISP events for each
 for report in reports:

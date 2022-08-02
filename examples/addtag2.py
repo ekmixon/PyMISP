@@ -41,5 +41,5 @@ if __name__ == '__main__':
     if args.uuid:
         uuid = args.uuid
 
-    print("UUID tagged: %s" % uuid)
+    print(f"UUID tagged: {uuid}")
     misp.tag(uuid, args.tag)

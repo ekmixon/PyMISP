@@ -50,10 +50,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if not args.fieldnames:
-        has_fieldnames = True
-    else:
-        has_fieldnames = args.skip_fieldnames
+    has_fieldnames = args.skip_fieldnames if args.fieldnames else True
     csv_loader = CSVLoader(template_name=args.object_name, csv_path=args.path,
                            fieldnames=args.fieldnames, has_fieldnames=has_fieldnames,
                            delimiter=args.delimiter, quotechar=args.quotechar)
@@ -62,31 +59,30 @@ if __name__ == '__main__':
     if args.dump:
         for o in objects:
             print(o.to_json())
+    elif offline:
+        print('You are in offline mode, quitting.')
     else:
-        if offline:
-            print('You are in offline mode, quitting.')
+        misp = ExpandedPyMISP(url=misp_url, key=misp_key, ssl=misp_verifycert)
+        if args.new_event:
+            event = MISPEvent()
+            event.info = args.new_event
+            for o in objects:
+                event.add_object(**o)
+            new_event = misp.add_event(event, pythonify=True)
+            if isinstance(new_event, str):
+                print(new_event)
+            elif 'id' in new_event:
+                print(f'Created new event {new_event.id}')
+            else:
+                print('Something went wrong:')
+                print(new_event)
         else:
-            misp = ExpandedPyMISP(url=misp_url, key=misp_key, ssl=misp_verifycert)
-            if args.new_event:
-                event = MISPEvent()
-                event.info = args.new_event
-                for o in objects:
-                    event.add_object(**o)
-                new_event = misp.add_event(event, pythonify=True)
-                if isinstance(new_event, str):
-                    print(new_event)
-                elif 'id' in new_event:
-                    print(f'Created new event {new_event.id}')
+            for o in objects:
+                new_object = misp.add_object(args.update_event, o, pythonify=True)
+                if isinstance(new_object, str):
+                    print(new_object)
+                elif new_object.attributes:
+                    print(f'New {new_object.name} object added to {args.update_event}')
                 else:
                     print('Something went wrong:')
                     print(new_event)
-            else:
-                for o in objects:
-                    new_object = misp.add_object(args.update_event, o, pythonify=True)
-                    if isinstance(new_object, str):
-                        print(new_object)
-                    elif new_object.attributes:
-                        print(f'New {new_object.name} object added to {args.update_event}')
-                    else:
-                        print('Something went wrong:')
-                        print(new_event)

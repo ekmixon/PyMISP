@@ -71,8 +71,7 @@ def copy(eventid):
 
 
 def export_our_org():
-    circl = source.search(org='CIRCL')
-    return circl
+    return source.search(org='CIRCL')
 
 if __name__ == '__main__':
     import argparse

@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     if args.days is None:
         args.days = 7
-    result = misp.search(last='{}d'.format(args.days), metadata=True)
+    result = misp.search(last=f'{args.days}d', metadata=True)
 
     date_tools.checkDateConsistancy(args.begindate, args.enddate, date_tools.getLastdate(args.days))
 
@@ -50,14 +50,14 @@ if __name__ == '__main__':
 
     text = 'Studied pediod: from '
     if args.begindate is None:
-        text = text + '1970-01-01'
+        text += '1970-01-01'
     else:
-        text = text + str(args.begindate.date())
-        text = text + ' to '
+        text += str(args.begindate.date())
+        text += ' to '
     if args.enddate is None:
-        text = text + str(datetime.now().date())
+        text += str(datetime.now().date())
     else:
-        text = text + str(args.enddate.date())
+        text += str(args.enddate.date())
 
     print('\n========================================================')
     print(text)

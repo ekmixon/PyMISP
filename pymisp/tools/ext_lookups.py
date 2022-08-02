@@ -32,10 +32,7 @@ def revert_tag_from_taxonomies(tag):
 
 def search_taxonomies(query):
     taxonomies = Taxonomies()
-    found = taxonomies.search(query)
-    if not found:
-        found = taxonomies.search(query, expanded=True)
-    return found
+    return taxonomies.search(query) or taxonomies.search(query, expanded=True)
 
 
 def search_galaxies(query):

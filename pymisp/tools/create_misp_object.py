@@ -50,23 +50,23 @@ def make_binary_objects(filepath: Optional[str] = None, pseudofile: Optional[Byt
             elif isinstance(lief_parsed, lief.MachO.Binary):
                 return make_macho_objects(lief_parsed, misp_file, standalone, default_attributes_parameters)
         except lief.bad_format as e:
-            logger.warning('Bad format: {}'.format(e))
+            logger.warning(f'Bad format: {e}')
         except lief.bad_file as e:
-            logger.warning('Bad file: {}'.format(e))
+            logger.warning(f'Bad file: {e}')
         except lief.conversion_error as e:
-            logger.warning('Conversion file: {}'.format(e))
+            logger.warning(f'Conversion file: {e}')
         except lief.builder_error as e:
-            logger.warning('Builder file: {}'.format(e))
+            logger.warning(f'Builder file: {e}')
         except lief.parser_error as e:
-            logger.warning('Parser error: {}'.format(e))
+            logger.warning(f'Parser error: {e}')
         except lief.integrity_error as e:
-            logger.warning('Integrity error: {}'.format(e))
+            logger.warning(f'Integrity error: {e}')
         except lief.pe_error as e:
-            logger.warning('PE error: {}'.format(e))
+            logger.warning(f'PE error: {e}')
         except lief.type_error as e:
-            logger.warning('Type error: {}'.format(e))
+            logger.warning(f'Type error: {e}')
         except lief.exception as e:
-            logger.warning('Lief exception: {}'.format(e))
+            logger.warning(f'Lief exception: {e}')
         except FileTypeNotImplemented as e:
             logger.warning(e)
     if not HAS_LIEF:

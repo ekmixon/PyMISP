@@ -18,7 +18,7 @@ def beautyful_sleep(sleep, additional):
     sleeptime = float(sleep) / float(length)
     for i in range(length):
         temp_string = '|'*i + ' '*(length-i-1)
-        print('sleeping [{}]\t{}'.format(temp_string, additional), end='\r', sep='')
+        print(f'sleeping [{temp_string}]\t{additional}', end='\r', sep='')
         sys.stdout.flush()
         time.sleep(sleeptime)
 
@@ -40,9 +40,7 @@ class RedisToMISPFeed:
 
         self.keynames = []
         for k in settings.keyname_pop:
-            for s in self.SUFFIX_LIST:
-                self.keynames.append(k+s)
-
+            self.keynames.extend(k+s for s in self.SUFFIX_LIST)
         self.keynameError = settings.keyname_error
 
         self.update_last_action("Init system")
@@ -71,9 +69,7 @@ class RedisToMISPFeed:
             return None
         try:
             popped = json.loads(popped)
-        except ValueError as error:
-            self.save_error_to_redis(error, popped)
-        except ValueError as error:
+        except (ValueError, ValueError) as error:
             self.save_error_to_redis(error, popped)
         return popped
 
@@ -138,15 +134,12 @@ class RedisToMISPFeed:
         self.last_action_time = datetime.datetime.now()
 
     def format_last_action(self):
-        return "Last action: [{}] @ {}".format(
-            self.last_action,
-            self.last_action_time.isoformat().replace('T', ' '),
-        )
+        return f"Last action: [{self.last_action}] @ {self.last_action_time.isoformat().replace('T', ' ')}"
 
 
     def save_error_to_redis(self, error, item):
         to_push = {'error': str(error), 'item': str(item)}
-        print('Error:', str(error), '\nOn adding:', item)
+        print('Error:', error, '\nOn adding:', item)
         self.serv.lpush(self.keynameError, to_push)
 
 

@@ -166,24 +166,18 @@ def load_openioc(openioc):
         raise Exception('You need to install BeautifulSoup: pip install bs4')
     misp_event = MISPEvent()
     iocreport = BeautifulSoup(openioc, "html.parser")
-    # Set event fields
-    info = extract_field(iocreport, 'short_description')
-    if info:
+    if info := extract_field(iocreport, 'short_description'):
         misp_event.info = info
-    date = extract_field(iocreport, 'authored_date')
-    if date:
+    if date := extract_field(iocreport, 'authored_date'):
         misp_event.set_date(date)
-    # Set special attributes
-    description = extract_field(iocreport, 'description')
-    if description:
+    if description := extract_field(iocreport, 'description'):
         if not misp_event.info:
             misp_event.info = description
         else:
             misp_event.add_attribute('comment', description)
     if not misp_event.info:
         misp_event.info = 'OpenIOC import'
-    author = extract_field(iocreport, 'authored_by')
-    if author:
+    if author := extract_field(iocreport, 'authored_by'):
         misp_event.add_attribute('comment', author)
     misp_event = set_all_attributes(iocreport, misp_event)
     return misp_event
@@ -191,10 +185,7 @@ def load_openioc(openioc):
 
 def get_mapping(openioc_type, mappingDict=iocMispMapping):
     t = openioc_type.lower()
-    for k, v in mappingDict.items():
-        if k.lower() == t:
-            return v
-    return False
+    return next((v for k, v in mappingDict.items() if k.lower() == t), False)
 
 
 def set_values(value1, value2=None):
@@ -202,9 +193,8 @@ def set_values(value1, value2=None):
 
     if value2 is not None:
         # construct attribut composite value
-        value = "{}|{}".format(extract_field(value1, 'Content'),
-                               extract_field(value2, 'Content')
-                               )
+        value = f"{extract_field(value1, 'Content')}|{extract_field(value2, 'Content')}"
+
     else:
         value = extract_field(value1, 'Content')
 
@@ -215,18 +205,19 @@ def set_values(value1, value2=None):
 
     if value2 is not None:
         # construct attribut composite type
-        compositeMapping = '{}|{}'.format(value1.find('context')['search'], value2.find('context')['search'])
+        compositeMapping = f"{value1.find('context')['search']}|{value2.find('context')['search']}"
+
         mapping = get_mapping(compositeMapping, mappingDict=iocMispCompositeMapping)
     else:
         context_search = value1.find('context')['search']
         content_type = value1.find('content').get('type', None)
         if "RouteEntryItem/Destination" in context_search and content_type:
-            mapping = get_mapping(context_search + '/' + content_type)
+            mapping = get_mapping(f'{context_search}/{content_type}')
         else:
             mapping = get_mapping(context_search)
 
     if mapping:
-        attribute_values.update(mapping)
+        attribute_values |= mapping
     else:
         # Unknown mapping, assign to default
         attribute_values['category'] = 'External analysis'
@@ -238,9 +229,10 @@ def set_values(value1, value2=None):
         attribute_values['type'] = attribute_values['type'] + '|port'
         attribute_values['value'] = attribute_values['value'].replace(':', '|')
 
-    attribute_values["comment"] = '{}{}'.format(extract_field(value1, 'Comment'),
-                                                extract_field(value2, 'Comment')
-                                                )
+    attribute_values[
+        "comment"
+    ] = f"{extract_field(value1, 'Comment')}{extract_field(value2, 'Comment')}"
+
 
     return attribute_values
 

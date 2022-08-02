@@ -56,9 +56,8 @@ def generate_report(indicator, apikey):
 
     :indicator: Indicator hash to search in VT for
     '''
-    report_objects = []
     vt_report = VTReportObject(apikey, indicator)
-    report_objects.append(vt_report)
+    report_objects = [vt_report]
     raw_report = vt_report._report
     if vt_report._resource_type == "file":
         file_object = pymisp.MISPObject(name="file")
@@ -117,9 +116,13 @@ def main(misp, config, args):
     :args: Argparse CLI object
     '''
     if args.indicator:
-        misp_objects = generate_report(args.indicator, config["virustotal"]["key"])
-        if misp_objects:
-            misp_event = get_misp_event(args.event, "VirusTotal Report for {}".format(args.indicator))
+        if misp_objects := generate_report(
+            args.indicator, config["virustotal"]["key"]
+        ):
+            misp_event = get_misp_event(
+                args.event, f"VirusTotal Report for {args.indicator}"
+            )
+
             submit_to_misp(misp, misp_event, misp_objects)
     elif args.file:
         try:
@@ -127,14 +130,15 @@ def main(misp, config, args):
             with open(args.file, "r") as ifile:
                 for indicator in ifile:
                     try:
-                        misp_objects = generate_report(indicator, config["virustotal"]["key"])
-                        if misp_objects:
+                        if misp_objects := generate_report(
+                            indicator, config["virustotal"]["key"]
+                        ):
                             reports.append(misp_objects)
                     except pymisp.exceptions.InvalidMISPObject as err:
                         logging.error(err)
             if reports:
                 current_time = datetime.now().strftime("%x %X")
-                misp_event = get_misp_event(args.event, "VirusTotal Reports: {}".format(current_time))
+                misp_event = get_misp_event(args.event, f"VirusTotal Reports: {current_time}")
                 for report in reports:
                     submit_to_misp(misp, misp_event, report)
         except OSError:
@@ -142,9 +146,10 @@ def main(misp, config, args):
     elif args.link:
         # https://www.virustotal.com/#/file/<ioc>/detection
         indicator = args.link.split("/")[5]
-        misp_objects = generate_report(indicator, config["virustotal"]["key"])
-        if misp_objects:
-            misp_event = get_misp_event(args.event, "VirusTotal Report for {}".format(indicator))
+        if misp_objects := generate_report(
+            indicator, config["virustotal"]["key"]
+        ):
+            misp_event = get_misp_event(args.event, f"VirusTotal Report for {indicator}")
             submit_to_misp(misp, misp_event, misp_objects)
 
 

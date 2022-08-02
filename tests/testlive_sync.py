@@ -13,12 +13,11 @@ logging.disable(logging.CRITICAL)
 try:
     from pymisp import ExpandedPyMISP, MISPOrganisation, MISPUser, MISPEvent, MISPObject, MISPSharingGroup, Distribution
 except ImportError:
-    if sys.version_info < (3, 6):
-        print('This test suite requires Python 3.6+, breaking.')
-        sys.exit(0)
-    else:
+    if sys.version_info >= (3, 6):
         raise
 
+    print('This test suite requires Python 3.6+, breaking.')
+    sys.exit(0)
 key = 'eYQdGTEWZJ8C2lm9EpnMqxQGwGiPNyoR75JvLdlE'
 verifycert = False
 

@@ -16,7 +16,7 @@ def searchall(m, search, quiet, url, out=None):
     result = m.search_all(search)
     if quiet:
         for e in result['response']:
-            print('{}{}{}\n'.format(url, '/events/view/', e['Event']['id']))
+            print(f"{url}/events/view/{e['Event']['id']}\n")
     elif out is None:
         print(json.dumps(result['response']))
     else:

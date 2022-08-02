@@ -41,7 +41,10 @@ def set_drift_timestamp(drift_timestamp, drift_timestamp_path):
             f.write(str(drift_timestamp))
         return True
     except IOError:
-        sys.exit("Unable to write drift_timestamp %s to %s" % (drift_timestamp, drift_timestamp_path))
+        sys.exit(
+            f"Unable to write drift_timestamp {drift_timestamp} to {drift_timestamp_path}"
+        )
+
         return False
 
 
@@ -52,10 +55,7 @@ def get_drift_timestamp(drift_timestamp_path):
     try:
         with open(drift_timestamp_path) as f:
             drift = f.read()
-            if drift:
-                drift = int(float(drift))
-            else:
-                drift = 0
+            drift = int(float(drift)) if drift else 0
     except IOError:
         drift = 0
 
@@ -119,19 +119,16 @@ if __name__ == '__main__':
     start_timestamp_s = datetime.fromtimestamp(start_timestamp).strftime(ts_format)
     end_timestamp_s = datetime.fromtimestamp(end_timestamp).strftime(ts_format)
 
-    # Get all attribute sightings
-    found_sightings = search_sightings(misp, start_timestamp, end_timestamp)
-    if found_sightings:
+    if found_sightings := search_sightings(
+        misp, start_timestamp, end_timestamp
+    ):
         for s in found_sightings:
-            if int(s['type']) == 0:
-                s_type = 'TP'
-            else:
-                s_type = 'FP'
+            s_type = 'TP' if int(s['type']) == 0 else 'FP'
             date_sighting = datetime.fromtimestamp(int(s['date_sighting'])).strftime(ts_format)
             s_title = s['event_title']
             s_title = s_title.replace('\r','').replace('\n','').replace('\t','')
             source = s['source']
-            if not s['source']:
+            if not source:
                 source = 'N/A'
             report_sightings = report_sightings + '%s for [%s] (%s) in event [%s] (%s) on %s from %s (to_ids flag: %s) \n' % ( s_type, s['value'], s['attribute_id'], s_title, s['event_id'], date_sighting, source, s['to_ids'])
 
@@ -153,7 +150,8 @@ if __name__ == '__main__':
 
         report_sightings_body = 'MISP Sightings report for %s between %s and %s\n-------------------------------------------------------------------------------\n\n' % (misp_url, start_timestamp_s, end_timestamp_s)
         report_sightings_body = report_sightings_body + report_sightings
-        subject = 'Report of sightings between %s and %s' % (start_timestamp_s, end_timestamp_s)
+        subject = f'Report of sightings between {start_timestamp_s} and {end_timestamp_s}'
+
 
         msg = MIMEMultipart()
         msg['From'] = smtp_from

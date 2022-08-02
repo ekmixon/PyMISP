@@ -35,7 +35,8 @@ class VTReportObject(AbstractMISPObjectGenerator):
             self._report = self.__query_virustotal(apikey, indicator)
             self.generate_attributes()
         else:
-            error_msg = "A valid indicator is required. (One of type url, md5, sha1, sha256). Received '{}' instead".format(indicator)
+            error_msg = f"A valid indicator is required. (One of type url, md5, sha1, sha256). Received '{indicator}' instead"
+
             raise InvalidMISPObject(error_msg)
 
     def get_report(self):
@@ -45,7 +46,7 @@ class VTReportObject(AbstractMISPObjectGenerator):
         ''' Parse the VirusTotal report for relevant attributes '''
         self.add_attribute("last-submission", value=self._report["scan_date"])
         self.add_attribute("permalink", value=self._report["permalink"])
-        ratio = "{}/{}".format(self._report["positives"], self._report["total"])
+        ratio = f'{self._report["positives"]}/{self._report["total"]}'
         self.add_attribute("detection-ratio", value=ratio)
 
     def __validate_resource(self, ioc: str):
@@ -72,7 +73,7 @@ class VTReportObject(AbstractMISPObjectGenerator):
 
         :resource: Indicator to search in VirusTotal
         '''
-        url = "https://www.virustotal.com/vtapi/v2/{}/report".format(self._resource_type)
+        url = f"https://www.virustotal.com/vtapi/v2/{self._resource_type}/report"
         params = {"apikey": apikey, "resource": resource}
         # for now assume we're using a public API key - we'll figure out private keys later
         if self._proxies:
@@ -82,6 +83,5 @@ class VTReportObject(AbstractMISPObjectGenerator):
         report_json = report.json()
         if report_json["response_code"] == 1:
             return report_json
-        else:
-            error_msg = "{}: {}".format(resource, report_json["verbose_msg"])
-            raise InvalidMISPObject(error_msg)
+        error_msg = f'{resource}: {report_json["verbose_msg"]}'
+        raise InvalidMISPObject(error_msg)

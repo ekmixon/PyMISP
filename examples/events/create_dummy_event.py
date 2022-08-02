@@ -19,5 +19,5 @@ if __name__ == '__main__':
     if args.limit is None:
         args.limit = 1
 
-    for i in range(args.limit):
+    for _ in range(args.limit):
         tools.create_dummy_event(misp)

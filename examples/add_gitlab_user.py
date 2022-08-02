@@ -35,9 +35,9 @@ parser.add_argument("-l", "--link", required=False, help="Url to access the GitL
 args = parser.parse_args()
 
 
-r = requests.get("{}api/v4/users?username={}".format(args.link, args.username))
+r = requests.get(f"{args.link}api/v4/users?username={args.username}")
 if r.status_code != 200:
-    sys.exit("HTTP return is {} and not 200 as expected".format(r.status_code))
+    sys.exit(f"HTTP return is {r.status_code} and not 200 as expected")
 if args.force_template_update:
     print("Updating MISP Object templates...")
     update_objects()

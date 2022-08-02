@@ -8,7 +8,7 @@ import date_tools
 
 def tagsDistributionScatterPlot(NbTags, dates, plotname='Tags Distribution Plot'):
 
-    output_file(plotname + ".html")
+    output_file(f"{plotname}.html")
 
     counts = {}
     glyphs = {}
@@ -17,9 +17,11 @@ def tagsDistributionScatterPlot(NbTags, dates, plotname='Tags Distribution Plot'
     plot = figure(plot_width=800, plot_height=800, x_axis_type="datetime", x_axis_label='Date', y_axis_label='Number of tags', tools=[hover])
 
     for name in NbTags.keys():
-        desc[name] = []
-        for date in dates[name]:
-            desc[name].append(date_tools.datetimeToString(date, "%Y-%m-%d"))
+        desc[name] = [
+            date_tools.datetimeToString(date, "%Y-%m-%d")
+            for date in dates[name]
+        ]
+
         counts[name] = plot.circle(dates[name], NbTags[name], legend="Number of events with y tags", source=ColumnDataSource(
             data=dict(
                 desc=desc[name]

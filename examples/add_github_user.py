@@ -32,9 +32,9 @@ if __name__ == '__main__':
     parser.add_argument("-u", "--username", required=True, help="GitHub username to add")
     args = parser.parse_args()
 
-    r = requests.get("https://api.github.com/users/{}".format(args.username))
+    r = requests.get(f"https://api.github.com/users/{args.username}")
     if r.status_code != 200:
-        sys.exit("HTTP return is {} and not 200 as expected".format(r.status_code))
+        sys.exit(f"HTTP return is {r.status_code} and not 200 as expected")
     if args.force_template_update:
         print("Updating MISP Object templates...")
         update_objects()
@@ -44,9 +44,12 @@ if __name__ == '__main__':
     github_user = r.json()
     rfollowers = requests.get(github_user['followers_url'])
     followers = rfollowers.json()
-    rfollowing = requests.get("https://api.github.com/users/{}/following".format(args.username))
+    rfollowing = requests.get(
+        f"https://api.github.com/users/{args.username}/following"
+    )
+
     followings = rfollowing.json()
-    rkeys = requests.get("https://api.github.com/users/{}/keys".format(args.username))
+    rkeys = requests.get(f"https://api.github.com/users/{args.username}/keys")
     keys = rkeys.json()
     misp_object.add_attributes("follower", *[follower['login'] for follower in followers])
     misp_object.add_attributes("following", *[following['login'] for following in followings])

@@ -38,7 +38,7 @@ def saveHashes(hashes):
     try:
         with open(os.path.join(outputdir, 'hashes.csv'), 'w') as hashFile:
             for element in hashes:
-                hashFile.write('{},{}\n'.format(element[0], element[1]))
+                hashFile.write(f'{element[0]},{element[1]}\n')
     except Exception as e:
         print(e)
         sys.exit('Could not create the quick hash lookup file.')
@@ -46,9 +46,8 @@ def saveHashes(hashes):
 
 def saveManifest(manifest):
     try:
-        manifestFile = open(os.path.join(outputdir, 'manifest.json'), 'w')
-        manifestFile.write(json.dumps(manifest))
-        manifestFile.close()
+        with open(os.path.join(outputdir, 'manifest.json'), 'w') as manifestFile:
+            manifestFile.write(json.dumps(manifest))
     except Exception as e:
         print(e)
         sys.exit('Could not create the manifest file.')
@@ -78,9 +77,9 @@ if __name__ == '__main__':
             print(f'Invalid distribution {e.distribution}, skipping')
             continue
         hashes += [[h, e.uuid] for h in e_feed['Event'].pop('_hashes')]
-        manifest.update(e_feed['Event'].pop('_manifest'))
+        manifest |= e_feed['Event'].pop('_manifest')
         saveEvent(e_feed)
-        print("Event " + str(counter) + "/" + str(total) + " exported.")
+        print(f"Event {str(counter)}/{total} exported.")
         counter += 1
     saveManifest(manifest)
     print('Manifest saved.')

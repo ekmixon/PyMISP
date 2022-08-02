@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     if args.days is None:
         args.days = 7
-    result = misp.search(last='{}d'.format(args.days), metadata=True)
+    result = misp.search(last=f'{args.days}d', metadata=True)
 
     date_tools.checkDateConsistancy(args.begindate, args.enddate, date_tools.getLastdate(args.days))
 
@@ -49,22 +49,29 @@ if __name__ == '__main__':
         result = tools.isTagIn(tags, args.tag)
         totalPeriodTags = len(result)
 
-        text = 'Studied pediod: from '
-        if args.begindate is None:
-            text = text + '1970-01-01'
-        else:
-            text = text + str(args.begindate.date())
-        text = text + ' to '
+        text = 'Studied pediod: from ' + (
+            '1970-01-01'
+            if args.begindate is None
+            else str(args.begindate.date())
+        )
+
+        text += ' to '
         if args.enddate is None:
-            text = text + str(datetime.now().date())
+            text += str(datetime.now().date())
         else:
-            text = text + str(args.enddate.date())
+            text += str(args.enddate.date())
 
         print('\n========================================================')
         print(text)
-        print('During the studied pediod, ' + str(totalPeriodTags) + ' events out of ' + str(totalPeriodEvents) + ' contains at least one tag with ' + args.tag + '.')
+        print(
+            f'During the studied pediod, {totalPeriodTags} events out of {str(totalPeriodEvents)} contains at least one tag with {args.tag}.'
+        )
+
         if totalPeriodEvents != 0:
-            print('It represents {}% of the events in this period.'.format(round(100 * totalPeriodTags / totalPeriodEvents, 3)))
+            print(
+                f'It represents {round(100 * totalPeriodTags / totalPeriodEvents, 3)}% of the events in this period.'
+            )
+
     else:
         print ('There is no event answering the research criteria')
 

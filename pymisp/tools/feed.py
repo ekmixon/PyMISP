@@ -16,7 +16,7 @@ def feed_meta_generator(path: Path):
             continue
         event = MISPEvent()
         event.load_file(str(f_name))
-        manifests.update(event.manifest)
+        manifests |= event.manifest
         hashes += [f'{h},{event.uuid}' for h in event.attributes_hashes('md5')]
 
     with (path / 'manifest.json').open('w') as f:

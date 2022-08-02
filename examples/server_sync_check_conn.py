@@ -20,10 +20,15 @@ returns json object
 def check_connection(connection_number):
 
     misp_headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': misp_key}
-    req = requests.get(misp_url + 'servers/testConnection/{}'.format(connection_number), verify=misp_verifycert, headers=misp_headers, proxies=proxies)
+    req = requests.get(
+        misp_url + f'servers/testConnection/{connection_number}',
+        verify=misp_verifycert,
+        headers=misp_headers,
+        proxies=proxies,
+    )
 
-    result = json.loads(req.text)
-    return(result)
+
+    return json.loads(req.text)
 
 
 if __name__ == "__main__":

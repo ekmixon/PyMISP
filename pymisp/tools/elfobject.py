@@ -24,9 +24,7 @@ logger = logging.getLogger('pymisp')
 def make_elf_objects(lief_parsed: lief.Binary, misp_file: FileObject, standalone: bool = True, default_attributes_parameters: dict = {}):
     elf_object = ELFObject(parsed=lief_parsed, standalone=standalone, default_attributes_parameters=default_attributes_parameters)
     misp_file.add_reference(elf_object.uuid, 'includes', 'ELF indicators')
-    elf_sections = []
-    for s in elf_object.sections:
-        elf_sections.append(s)
+    elf_sections = list(elf_object.sections)
     return misp_file, elf_object, elf_sections
 
 
@@ -43,7 +41,10 @@ class ELFObject(AbstractMISPObjectGenerator):
             elif isinstance(pseudofile, bytes):
                 self.__elf = lief.ELF.parse(raw=pseudofile)
             else:
-                raise InvalidMISPObject('Pseudo file can be BytesIO or bytes got {}'.format(type(pseudofile)))
+                raise InvalidMISPObject(
+                    f'Pseudo file can be BytesIO or bytes got {type(pseudofile)}'
+                )
+
         elif filepath:
             self.__elf = lief.ELF.parse(filepath)
         elif parsed:
@@ -51,7 +52,7 @@ class ELFObject(AbstractMISPObjectGenerator):
             if isinstance(parsed, lief.ELF.Binary):
                 self.__elf = parsed
             else:
-                raise InvalidMISPObject('Not a lief.ELF.Binary: {}'.format(type(parsed)))
+                raise InvalidMISPObject(f'Not a lief.ELF.Binary: {type(parsed)}')
         self.generate_attributes()
 
     def generate_attributes(self):
@@ -68,7 +69,7 @@ class ELFObject(AbstractMISPObjectGenerator):
                 if not section.name:
                     continue
                 s = ELFSectionObject(section, standalone=self._standalone, default_attributes_parameters=self._default_attributes_parameters)
-                self.add_reference(s.uuid, 'includes', 'Section {} of ELF'.format(pos))
+                self.add_reference(s.uuid, 'includes', f'Section {pos} of ELF')
                 pos += 1
                 self.sections.append(s)
         self.add_attribute('number-sections', value=len(self.sections))

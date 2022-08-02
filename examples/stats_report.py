@@ -98,11 +98,7 @@ def get_data(misp, timeframe, date_from=None, date_to=None):
                     if to_ids:
                         number_of_attributes_to_ids = number_of_attributes_to_ids + 1
 
-                    if type in attr_type:
-                        attr_type[type] = attr_type[type] + 1
-                    else:
-                        attr_type[type] = 1
-
+                    attr_type[type] = attr_type[type] + 1 if type in attr_type else 1
                     if category in attr_category:
                         attr_category[category] = attr_category[category] + 1
                     else:

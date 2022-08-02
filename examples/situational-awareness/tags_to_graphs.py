@@ -27,16 +27,7 @@ if __name__ == '__main__':
 
     misp = PyMISP(misp_url, misp_key, misp_verifycert)
 
-    if args.period == "y":
-        if args.accuracy == "d":
-            split = 360
-            size = 1
-        else:
-            split = 12
-            size = 30
-        last = '360d'
-        title = 'Tags repartition over the last 360 days'
-    elif args.period == "m":
+    if args.period == "m":
         if args.accuracy == "d":
             split = 28
             size = 1
@@ -45,6 +36,15 @@ if __name__ == '__main__':
             size = 7
         last = '28d'
         title = 'Tags repartition over the last 28 days'
+    elif args.period == "y":
+        if args.accuracy == "d":
+            split = 360
+            size = 1
+        else:
+            split = 12
+            size = 30
+        last = '360d'
+        title = 'Tags repartition over the last 360 days'
     else:
         split = 7
         size = 1
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         colourDict = {}
         faketag = False
 
-        for i in range(split):
+        for _ in range(split):
             begindate = date_tools.getNDaysBefore(enddate, size)
             dates.append(str(enddate.date()))
             eventstemp = tools.selectInRange(events, begin=begindate, end=enddate)

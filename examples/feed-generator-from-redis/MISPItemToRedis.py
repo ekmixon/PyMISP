@@ -21,15 +21,13 @@ class MISPItemToRedis:
     def push_json(self, jdata, keyname, action):
         all_action = [s.lstrip('_') for s in self.SUFFIX_LIST]
         if action not in all_action:
-            raise('Error: Invalid action. (Allowed: {})'.format(all_action))
-        key = keyname + '_' + action
+            raise f'Error: Invalid action. (Allowed: {all_action})'
+        key = f'{keyname}_{action}'
         self.serv.lpush(key, jdata)
 
     def push_attribute(self, type_value, value, category=None, to_ids=False,
                 comment=None, distribution=None, proposal=False, **kwargs):
-        to_push = {}
-        to_push['type'] = type_value
-        to_push['value'] = value
+        to_push = {'type': type_value, 'value': value}
         if category is not None:
             to_push['category'] = category
         if to_ids is not None:

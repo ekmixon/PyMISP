@@ -15,11 +15,7 @@ class CSVLoader():
         self.quotechar = quotechar
         self.csv_path = csv_path
         self.fieldnames = [f.strip().lower() for f in fieldnames]
-        if not self.fieldnames:
-            # If the user doesn't pass fieldnames, we assume the CSV has them.
-            self.has_fieldnames = True
-        else:
-            self.has_fieldnames = has_fieldnames
+        self.has_fieldnames = has_fieldnames if self.fieldnames else True
 
     def load(self):
 
@@ -35,15 +31,14 @@ class CSVLoader():
 
             if not self.fieldnames:
                 raise Exception('No fieldnames, impossible to create objects.')
-            else:
-                # Check if the CSV file has a header, and if it matches with the object template
-                tmp_object = MISPObject(self.template_name)
-                if not tmp_object._definition['attributes']:
-                    raise Exception(f'Unable to find the object template ({self.template_name}), impossible to create objects.')
-                allowed_fieldnames = list(tmp_object._definition['attributes'].keys())
-                for fieldname in self.fieldnames:
-                    if fieldname not in allowed_fieldnames:
-                        raise Exception(f'{fieldname} is not a valid object relation for {self.template_name}: {allowed_fieldnames}')
+            # Check if the CSV file has a header, and if it matches with the object template
+            tmp_object = MISPObject(self.template_name)
+            if not tmp_object._definition['attributes']:
+                raise Exception(f'Unable to find the object template ({self.template_name}), impossible to create objects.')
+            allowed_fieldnames = list(tmp_object._definition['attributes'].keys())
+            for fieldname in self.fieldnames:
+                if fieldname not in allowed_fieldnames:
+                    raise Exception(f'{fieldname} is not a valid object relation for {self.template_name}: {allowed_fieldnames}')
 
             for row in reader:
                 tmp_object = MISPObject(self.template_name)

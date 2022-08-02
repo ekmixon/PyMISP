@@ -32,7 +32,7 @@ if __name__ == '__main__':
         enddate = date_tools.toDatetime(args.enddate)
         begindate = date_tools.toDatetime(args.begindate)
 
-        for i in range(round(date_tools.days_between(enddate, begindate)/args.days)):
+        for _ in range(round(date_tools.days_between(enddate, begindate)/args.days)):
             begindate = date_tools.getNDaysBefore(enddate, args.days)
             eventstemp = tools.selectInRange(events, begindate, enddate)
             if eventstemp is not None:

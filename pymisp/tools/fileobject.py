@@ -76,7 +76,7 @@ class FileObject(AbstractMISPObjectGenerator):
         """Calculate the entropy of a chunk of data."""
         # NOTE: copy of the entropy function from pefile
 
-        if len(data) == 0:
+        if not data:
             return 0.0
 
         occurrences = Counter(bytearray(data))

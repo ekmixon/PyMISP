@@ -41,8 +41,7 @@ def get_token(token_url, clientid, clientsecret, scope, grant_type, username, pa
                 access_token_response = requests.post(token_url, data=data, verify=False, allow_redirects=False, auth=(clientid, clientsecret))
                 tokens = json.loads(access_token_response.text)
                 if 'access_token' in tokens:
-                    access_token = tokens['access_token']
-                    return access_token
+                    return tokens['access_token']
                 else:
                     sys.exit('No token received')
             else:
@@ -60,7 +59,12 @@ def get_config(url, key, misp_verifycert):
     '''
     try:
         misp_headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': key}
-        req = requests.get(url + 'servers/serverSettings.json', verify=misp_verifycert, headers=misp_headers)
+        req = requests.get(
+            f'{url}servers/serverSettings.json',
+            verify=misp_verifycert,
+            headers=misp_headers,
+        )
+
         if req.status_code == 200:
             req_json = req.json()
             if 'finalSettings' in req_json:
@@ -201,9 +205,8 @@ def collect_events_ids(cytomicobj, moduleconfig):
                     if tg.name == cytomicobj.tag:
                         if not cytomicobj.lst_evtid:
                             cytomicobj.lst_evtid = str(evt['id'])
-                        else:
-                            if not evt['id'] in cytomicobj.lst_evtid:
-                                cytomicobj.lst_evtid.append(str(evt['id']))
+                        elif evt['id'] not in cytomicobj.lst_evtid:
+                            cytomicobj.lst_evtid.append(str(evt['id']))
                         break
         cytomicobj.lst_evtid.remove('x')
         cytomicobj.lst_evtid.remove('y')
@@ -243,48 +246,62 @@ def set_postdata(cytomicobj, moduleconfig, attribute):
     # Set JSON to send to the API.
     try:
 
+        event = attribute['Event']
         if cytomicobj.args.upload or cytomicobj.args.events:
-            event = attribute['Event']
             event_title = event['info']
             event_id = event['id']
             threat_level_id = int(event['threat_level_id'])
             if moduleconfig['post_threat_level_id'] <= threat_level_id:
 
-                if cytomicobj.atttype_misp == 'domain|ip' or cytomicobj.atttype_misp == 'hostname|port':
-                    post_value = attribute['value'].split('|')[0]
-                else:
-                    post_value = attribute['value']
+                post_value = (
+                    attribute['value'].split('|')[0]
+                    if cytomicobj.atttype_misp
+                    in ['domain|ip', 'hostname|port']
+                    else attribute['value']
+                )
 
-                if cytomicobj.atttype_misp == 'url' and 'http' not in post_value:
-                    pass
-                else:
+                if cytomicobj.atttype_misp != 'url' or 'http' in post_value:
                     if cytomicobj.post_data is None:
-                        cytomicobj.post_data = [{cytomicobj.attlabel_cytomic: post_value, 'AdditionalData': '{} {}'.format(cytomicobj.atttype_misp, attribute['comment']).strip(), 'Source': 'Uploaded from MISP', 'Policy': moduleconfig['cytomic_policy'], 'Description': '{} - {}'.format(event_id, event_title).strip()}]
-                    else:
-                        if post_value not in str(cytomicobj.post_data):
-                            cytomicobj.post_data.append({cytomicobj.attlabel_cytomic: post_value, 'AdditionalData': '{} {}'.format(cytomicobj.atttype_misp, attribute['comment']).strip(), 'Source': 'Uploaded from MISP', 'Policy': moduleconfig['cytomic_policy'], 'Description': '{} - {}'.format(event_id, event_title).strip()})
-            else:
-                if cytomicobject.debug:
-                    print('Event %s skipped because of lower threat level' % event_id)
+                        cytomicobj.post_data = [
+                            {
+                                cytomicobj.attlabel_cytomic: post_value,
+                                'AdditionalData': f"{cytomicobj.atttype_misp} {attribute['comment']}".strip(),
+                                'Source': 'Uploaded from MISP',
+                                'Policy': moduleconfig['cytomic_policy'],
+                                'Description': f'{event_id} - {event_title}'.strip(),
+                            }
+                        ]
+
+                    elif post_value not in str(cytomicobj.post_data):
+                        cytomicobj.post_data.append(
+                            {
+                                cytomicobj.attlabel_cytomic: post_value,
+                                'AdditionalData': f"{cytomicobj.atttype_misp} {attribute['comment']}".strip(),
+                                'Source': 'Uploaded from MISP',
+                                'Policy': moduleconfig['cytomic_policy'],
+                                'Description': f'{event_id} - {event_title}'.strip(),
+                            }
+                        )
+
+            elif cytomicobject.debug:
+                print(f'Event {event_id} skipped because of lower threat level')
         else:
-            event = attribute['Event']
             threat_level_id = int(event['threat_level_id'])
             if moduleconfig['post_threat_level_id'] <= threat_level_id:
-                if cytomicobj.atttype_misp == 'domain|ip' or cytomicobj.atttype_misp == 'hostname|port':
-                    post_value = attribute['value'].split('|')[0]
-                else:
-                    post_value = attribute['value']
+                post_value = (
+                    attribute['value'].split('|')[0]
+                    if cytomicobj.atttype_misp
+                    in ['domain|ip', 'hostname|port']
+                    else attribute['value']
+                )
 
-                if cytomicobj.atttype_misp == 'url' and 'http' not in post_value:
-                    pass
-                else:
+                if cytomicobj.atttype_misp != 'url' or 'http' in post_value:
                     if cytomicobj.post_data is None:
                         cytomicobj.post_data = [{cytomicobj.attlabel_cytomic: post_value}]
                     else:
                         cytomicobj.post_data.append({cytomicobj.attlabel_cytomic: post_value})
-            else:
-                if cytomicobject.debug:
-                    print('Event %s skipped because of lower threat level' % event_id)
+            elif cytomicobject.debug:
+                print(f'Event {event_id} skipped because of lower threat level')
     except Exception:
         cytomicobj.error = True
         if cytomicobj.debug:
@@ -296,22 +313,24 @@ def send_postdata(cytomicobj, evtid=None):
     try:
         if cytomicobj.post_data is not None:
             if cytomicobj.debug:
-                print('POST: {} {}'.format(cytomicobj.endpoint_ioc, cytomicobj.post_data))
+                print(f'POST: {cytomicobj.endpoint_ioc} {cytomicobj.post_data}')
             result_post_endpoint_ioc = requests.post(cytomicobj.endpoint_ioc, headers=cytomicobj.api_call_headers, json=cytomicobj.post_data, verify=False)
             json_result_post_endpoint_ioc = json.loads(result_post_endpoint_ioc.text)
             print(result_post_endpoint_ioc)
             if 'true' not in (result_post_endpoint_ioc.text):
                 cytomicobj.error = True
                 if evtid is not None:
-                    if cytomicobj.res_msg['Event: ' + str(evtid)] is None:
-                        cytomicobj.res_msg['Event: ' + str(evtid)] = '(Send POST data: errors uploading attributes, event NOT untagged). If the problem persists, please review the format of the value of the attributes is correct.'
-                    else:
-                        cytomicobj.res_msg['Event: ' + str(evtid)] = cytomicobj.res_msg['Event: ' + str(evtid)] + ' (Send POST data -else: errors uploading attributes, event NOT untagged). If the problem persists, please review the format of the value of the attributes is correct.'
+                    cytomicobj.res_msg[f'Event: {str(evtid)}'] = (
+                        '(Send POST data: errors uploading attributes, event NOT untagged). If the problem persists, please review the format of the value of the attributes is correct.'
+                        if cytomicobj.res_msg[f'Event: {str(evtid)}'] is None
+                        else cytomicobj.res_msg[f'Event: {str(evtid)}']
+                        + ' (Send POST data -else: errors uploading attributes, event NOT untagged). If the problem persists, please review the format of the value of the attributes is correct.'
+                    )
+
             if cytomicobj.debug:
-                print('RESULT: {}'.format(json_result_post_endpoint_ioc))
-        else:
-            if evtid is None:
-                cytomicobj.error = True
+                print(f'RESULT: {json_result_post_endpoint_ioc}')
+        elif evtid is None:
+            cytomicobj.error = True
     except Exception:
         cytomicobj.error = True
         if cytomicobj.debug:

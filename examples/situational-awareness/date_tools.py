@@ -33,17 +33,16 @@ def datetimeToString(datetime, formatstring):
 
 
 def checkDateConsistancy(begindate, enddate, lastdate):
-    if begindate is not None and enddate is not None:
-        if begindate > enddate:
-            raise DateError('begindate ({}) cannot be after enddate ({})'.format(begindate, enddate))
+    if begindate is not None and enddate is not None and begindate > enddate:
+        raise DateError(f'begindate ({begindate}) cannot be after enddate ({enddate})')
 
-    if enddate is not None:
-        if toDatetime(enddate) < lastdate:
-            raise DateError('enddate ({}) cannot be before lastdate ({})'.format(enddate, lastdate))
+    if enddate is not None and toDatetime(enddate) < lastdate:
+        raise DateError(f'enddate ({enddate}) cannot be before lastdate ({lastdate})')
 
-    if begindate is not None:
-        if toDatetime(begindate) > datetime.now():
-            raise DateError('begindate ({}) cannot be after today ({})'.format(begindate, datetime.now().date()))
+    if begindate is not None and toDatetime(begindate) > datetime.now():
+        raise DateError(
+            f'begindate ({begindate}) cannot be after today ({datetime.now().date()})'
+        )
 
 
 def setBegindate(begindate, lastdate):

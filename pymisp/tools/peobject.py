@@ -27,9 +27,7 @@ logger = logging.getLogger('pymisp')
 def make_pe_objects(lief_parsed: lief.Binary, misp_file: FileObject, standalone: bool = True, default_attributes_parameters: dict = {}):
     pe_object = PEObject(parsed=lief_parsed, standalone=standalone, default_attributes_parameters=default_attributes_parameters)
     misp_file.add_reference(pe_object.uuid, 'includes', 'PE indicators')
-    pe_sections = []
-    for s in pe_object.sections:
-        pe_sections.append(s)
+    pe_sections = list(pe_object.sections)
     return misp_file, pe_object, pe_sections
 
 
@@ -47,7 +45,10 @@ class PEObject(AbstractMISPObjectGenerator):
             elif isinstance(pseudofile, bytes):
                 self.__pe = lief.PE.parse(raw=pseudofile)
             else:
-                raise InvalidMISPObject('Pseudo file can be BytesIO or bytes got {}'.format(type(pseudofile)))
+                raise InvalidMISPObject(
+                    f'Pseudo file can be BytesIO or bytes got {type(pseudofile)}'
+                )
+
         elif filepath:
             self.__pe = lief.PE.parse(filepath)
         elif parsed:
@@ -55,7 +56,7 @@ class PEObject(AbstractMISPObjectGenerator):
             if isinstance(parsed, lief.PE.Binary):
                 self.__pe = parsed
             else:
-                raise InvalidMISPObject('Not a lief.PE.Binary: {}'.format(type(parsed)))
+                raise InvalidMISPObject(f'Not a lief.PE.Binary: {type(parsed)}')
         self.generate_attributes()
 
     def _is_exe(self):
@@ -68,10 +69,17 @@ class PEObject(AbstractMISPObjectGenerator):
 
     def _is_driver(self):
         # List from pefile
-        system_DLLs = set(('ntoskrnl.exe', 'hal.dll', 'ndis.sys', 'bootvid.dll', 'kdcom.dll'))
-        if system_DLLs.intersection([imp.lower() for imp in self.__pe.libraries]):
-            return True
-        return False
+        system_DLLs = {
+            'ntoskrnl.exe',
+            'hal.dll',
+            'ndis.sys',
+            'bootvid.dll',
+            'kdcom.dll',
+        }
+
+        return bool(
+            system_DLLs.intersection([imp.lower() for imp in self.__pe.libraries])
+        )
 
     def _get_pe_type(self):
         if self._is_dll():
@@ -117,10 +125,14 @@ class PEObject(AbstractMISPObjectGenerator):
                     # Skip section if name is none AND size is 0.
                     continue
                 s = PESectionObject(section, standalone=self._standalone, default_attributes_parameters=self._default_attributes_parameters)
-                self.add_reference(s.uuid, 'includes', 'Section {} of PE'.format(pos))
+                self.add_reference(s.uuid, 'includes', f'Section {pos} of PE')
                 if ((self.__pe.entrypoint >= section.virtual_address)
                         and (self.__pe.entrypoint < (section.virtual_address + section.virtual_size))):
-                    self.add_attribute('entrypoint-section-at-position', value='{}|{}'.format(section.name, pos))
+                    self.add_attribute(
+                        'entrypoint-section-at-position',
+                        value=f'{section.name}|{pos}',
+                    )
+
                 pos += 1
                 self.sections.append(s)
         self.add_attribute('number-sections', value=len(self.sections))
@@ -170,8 +182,9 @@ class PESigners(AbstractMISPObjectGenerator):
         self.add_attribute('digest_algorithm', value=self.__signer.digest_algorithm.name)
         self.add_attribute('encryption_algorithm', value=self.__signer.encryption_algorithm.name)
         self.add_attribute('digest-base64', value=b64encode(self.__signer.encrypted_digest))
-        info = self.__signer.get_attribute(lief.PE.SIG_ATTRIBUTE_TYPES.SPC_SP_OPUS_INFO)
-        if info:
+        if info := self.__signer.get_attribute(
+            lief.PE.SIG_ATTRIBUTE_TYPES.SPC_SP_OPUS_INFO
+        ):
             self.add_attribute('program-name', value=info.program_name)
             self.add_attribute('url', value=info.more_info)
 

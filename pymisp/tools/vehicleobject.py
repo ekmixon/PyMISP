@@ -50,7 +50,7 @@ class VehicleObject(AbstractMISPObjectGenerator):
         if (self._country == "es"):
             IndicativeValue = self._report["IndicativePrice"]
 
-        if (self._country == "es" or self._country == "uk"):
+        if self._country in ["es", "uk"]:
             firstRegistration = self._report["RegistrationYear"]
             VIN = self._report["VehicleIdentificationNumber"]
 
@@ -66,7 +66,7 @@ class VehicleObject(AbstractMISPObjectGenerator):
         self.add_attribute('image-url', type='text', value=ImageUrl)
 
     def _query(self):
-        payload = "RegistrationNumber={}&username={}".format(self._registration, self._username)
+        payload = f"RegistrationNumber={self._registration}&username={self._username}"
         headers = {
             'Content-Type': "application/x-www-form-urlencoded",
             'cache-control': "no-cache",

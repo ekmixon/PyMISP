@@ -27,11 +27,7 @@ if __name__ == '__main__':
         print('Output file already exists, aborted.')
         exit(0)
 
-    if misp_client_cert == '':
-        misp_client_cert = None
-    else:
-        misp_client_cert = (misp_client_cert)
-
+    misp_client_cert = misp_client_cert or None
     misp = ExpandedPyMISP(misp_url, misp_key, misp_verifycert, cert=misp_client_cert)
     result = misp.search(publish_timestamp=args.last, limit=args.limit, page=args.page, pythonify=True)
 

@@ -16,7 +16,7 @@ def search(m, quiet, url, controller, out=None, **kwargs):
     result = m.search(controller, **kwargs)
     if quiet:
         for e in result['response']:
-            print('{}{}{}\n'.format(url, '/events/view/', e['Event']['id']))
+            print(f"{url}/events/view/{e['Event']['id']}\n")
     elif out is None:
         print(json.dumps(result['response']))
     else:
@@ -40,9 +40,5 @@ if __name__ == '__main__':
     misp = init(misp_url, misp_key)
     kwargs = {args.param: args.search}
 
-    if args.attributes:
-        controller='attributes'
-    else:
-        controller='events'
-
+    controller = 'attributes' if args.attributes else 'events'
     search(misp, args.quiet, misp_url, controller, args.output, **kwargs)

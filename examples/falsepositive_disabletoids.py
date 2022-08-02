@@ -121,7 +121,8 @@ if __name__ == '__main__':
             report_changes_body = report_changes_body + '\nEvents that have attributes with changed to_ids flag have been republished, without e-mail notification.'
             report_changes_body = report_changes_body + '\n\nMISP Disable to_ids Finished\n'
 
-            subject = 'Report of disable to_ids flag for false positives sightings of %s' % (current_date)
+            subject = f'Report of disable to_ids flag for false positives sightings of {current_date}'
+
             msg = MIMEMultipart()
             msg['From'] = smtp_from
             msg['To'] = smtp_to

@@ -17,6 +17,3 @@ if __name__ == '__main__':
         vehicle = VehicleObject(country=args.country, registration=args.registration, username=args.username)
         print(vehicle.report)
         print(vehicle.to_json())
-    else:
-        # not Implemented yet.
-        pass

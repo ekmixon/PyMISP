@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
             org = MISPOrganisation()
             org.name = row[0]
-            print("Process {}".format(org.name))
+            print(f"Process {org.name}")
             org.nationality = row[1]
             org.sector = row[2]
             org.type = row[3]
@@ -42,16 +42,15 @@ if __name__ == '__main__':
                 print(add_org['errors'])
             else:
                 count_orgs = count_orgs + 1
-                org_uuid = add_org.uuid
-
-                if org_uuid:
+                if org_uuid := add_org.uuid:
                     sharinggroup = MISPSharingGroup()
-                    sharinggroup_uuid = row[7]
-
-                    if sharinggroup_uuid:
+                    if sharinggroup_uuid := row[7]:
                         sharinggroup.uuid = sharinggroup_uuid
                         add_sharing = misp.add_org_to_sharing_group(sharinggroup, org)
                     else:
-                        print("Organisation {} not added to sharing group, missing sharing group uuid".format(org.name))
+                        print(
+                            f"Organisation {org.name} not added to sharing group, missing sharing group uuid"
+                        )
 
-    print("Import finished, {} organisations added".format(count_orgs))
+
+    print(f"Import finished, {count_orgs} organisations added")

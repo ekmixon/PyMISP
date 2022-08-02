@@ -12,7 +12,7 @@ def createTable(colors, categ_types_hash, tablename='attribute_table.html'):
         target.write('<!DOCTYPE html>\n<html>\n<head>\n<link rel="stylesheet" href="style.css">\n</head>\n<body>')
         for categ_name, types in categ_types_hash.items():
             table = pygal.Treemap(pretty_print=True)
-            target.write('\n <h1 style="color:{};">{}</h1>\n'.format(colors[categ_name], categ_name))
+            target.write(f'\n <h1 style="color:{colors[categ_name]};">{categ_name}</h1>\n')
             for d in types:
                 table.add(d['label'], d['value'])
             target.write(table.render_table(transpose=True))
@@ -31,7 +31,11 @@ def createTreemap(data, title, treename='attribute_treemap.svg', tablename='attr
         dict_to_print = {'label': names_types[type_val], 'value': total}
         categ_types_hash[names_categ[categ_id]].append(dict_to_print)
 
-    colors = {categ: "#%06X" % random.randint(0, 0xFFFFFF) for categ in categ_types_hash.keys()}
+    colors = {
+        categ: "#%06X" % random.randint(0, 0xFFFFFF)
+        for categ in categ_types_hash
+    }
+
     style = Style(background='transparent',
                   plot_background='#FFFFFF',
                   foreground='#111111',

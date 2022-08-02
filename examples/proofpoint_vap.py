@@ -8,9 +8,7 @@ misp = ExpandedPyMISP(url=misp_url, key=misp_key, ssl=misp_verifycert)
 
 urlVap = "https://tap-api-v2.proofpoint.com/v2/people/vap?window=30"  # Window can be 14, 30, and 90 Days
 
-headers = {
-    'Authorization': "Basic " + proofpoint_key
-}
+headers = {'Authorization': f"Basic {proofpoint_key}"}
 
 responseVap = requests.request("GET", urlVap, headers=headers)
 

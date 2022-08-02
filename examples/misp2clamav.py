@@ -18,9 +18,8 @@ def echeck(r):
     if r.get('errors'):
         if r.get('message') == 'No matches.':
             return
-        else:
-            print(r['errors'])
-            sys.exit(1)
+        print(r['errors'])
+        sys.exit(1)
 
 
 def find_hashes(htype):
@@ -33,13 +32,13 @@ def find_hashes(htype):
         attribute.from_dict(**a)
         if '|' in attribute.type and '|' in attribute.value:
             c, value = attribute.value.split('|')
-            comment = '{} - {}'.format(attribute.comment, c)
+            comment = f'{attribute.comment} - {c}'
         else:
             comment = attribute.comment
             value = attribute.value
         mhash = value.replace(':', ';')
         mfile = 'MISP event {} {}'.format(a['event_id'], comment.replace(':', ';').replace('\r', '').replace('\n', ''))
-        print('{}:*:{}:73'.format(mhash, mfile))
+        print(f'{mhash}:*:{mfile}:73')
 
 
 if __name__ == '__main__':

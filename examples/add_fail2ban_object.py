@@ -48,20 +48,20 @@ if __name__ == '__main__':
     me = None
     if args.force_new:
         me = create_new_event()
-    else:
-        response = pymisp.search_index(tags=args.tag, timestamp='1h', pythonify=True)
-        if response:
-            if args.disable_new:
-                event_id = response[0].id
-            else:
-                last_event_date = parse(response[0].date).date()
-                nb_attr = response[0].attribute_count
-                if last_event_date < date.today() or int(nb_attr) > 1000:
-                    me = create_new_event()
-                else:
-                    event_id = response[0].id
+    elif response := pymisp.search_index(
+        tags=args.tag, timestamp='1h', pythonify=True
+    ):
+        if args.disable_new:
+            event_id = response[0].id
         else:
-            me = create_new_event()
+            last_event_date = parse(response[0].date).date()
+            nb_attr = response[0].attribute_count
+            if last_event_date < date.today() or int(nb_attr) > 1000:
+                me = create_new_event()
+            else:
+                event_id = response[0].id
+    else:
+        me = create_new_event()
 
     parameters = {'banned-ip': args.banned_ip, 'attack-type': args.attack_type}
     if args.processing_timestamp:

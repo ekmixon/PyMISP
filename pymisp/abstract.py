@@ -116,17 +116,11 @@ class AbstractMISP(MutableMapping, MISPFileCache, metaclass=ABCMeta):
         self.__self_defined_describe_types: Optional[Dict] = None
         self.uuid: str
 
-        if kwargs.get('force_timestamps') is not None:
-            # Ignore the edited objects and keep the timestamps.
-            self.__force_timestamps: bool = True
-        else:
-            self.__force_timestamps: bool = False
+        self.__force_timestamps: bool = kwargs.get('force_timestamps') is not None
 
     @property
     def describe_types(self) -> Dict:
-        if self.__self_defined_describe_types:
-            return self.__self_defined_describe_types
-        return self.__describe_types
+        return self.__self_defined_describe_types or self.__describe_types
 
     @describe_types.setter
     def describe_types(self, describe_types: Dict):
@@ -222,18 +216,18 @@ class AbstractMISP(MutableMapping, MISPFileCache, metaclass=ABCMeta):
             self._set_default()  # type: ignore
         to_return = {}
         for field in self._fields_for_feed:
-            if getattr(self, field, None) is not None:
-                if field in ['timestamp', 'publish_timestamp']:
-                    to_return[field] = self._datetime_to_timestamp(getattr(self, field))
-                elif isinstance(getattr(self, field), (datetime, date)):
-                    to_return[field] = getattr(self, field).isoformat()
-                else:
-                    to_return[field] = getattr(self, field)
+            if getattr(self, field, None) is None:
+                if field not in ['data', 'first_seen', 'last_seen', 'deleted']:
+                    raise PyMISPError(
+                        f'The field {field} is required in {self.__class__.__name__} when generating a feed.'
+                    )
+
+            elif field in ['timestamp', 'publish_timestamp']:
+                to_return[field] = self._datetime_to_timestamp(getattr(self, field))
+            elif isinstance(getattr(self, field), (datetime, date)):
+                to_return[field] = getattr(self, field).isoformat()
             else:
-                if field in ['data', 'first_seen', 'last_seen', 'deleted']:
-                    # special fields
-                    continue
-                raise PyMISPError('The field {} is required in {} when generating a feed.'.format(field, self.__class__.__name__))
+                to_return[field] = getattr(self, field)
         to_return = _int_to_str(to_return)
         return to_return
 
@@ -268,7 +262,13 @@ class AbstractMISP(MutableMapping, MISPFileCache, metaclass=ABCMeta):
                              or (not self.__force_timestamps and (k == 'timestamp' and self.__edited)))})
 
     def __len__(self) -> int:
-        return len([k for k in self.__dict__.keys() if not (k[0] == '_' or k in self.__not_jsonable)])
+        return len(
+            [
+                k
+                for k in self.__dict__.keys()
+                if k[0] != '_' and k not in self.__not_jsonable
+            ]
+        )
 
     @property
     def edited(self) -> bool:
@@ -303,10 +303,7 @@ class AbstractMISP(MutableMapping, MISPFileCache, metaclass=ABCMeta):
 
     def _datetime_to_timestamp(self, d: Union[int, float, str, datetime]) -> int:
         """Convert a datetime object to a timestamp (int)"""
-        if isinstance(d, (int, float, str)):
-            # Assume we already have a timestamp
-            return int(d)
-        return int(d.timestamp())
+        return int(d) if isinstance(d, (int, float, str)) else int(d.timestamp())
 
     def _add_tag(self, tag: Optional[Union[str, 'MISPTag', Mapping]] = None, **kwargs):
         """Add a tag to the attribute (by name or a MISPTag object)"""

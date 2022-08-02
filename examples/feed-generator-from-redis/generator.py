@@ -172,17 +172,14 @@ class FeedGenerator:
             event_uuid = self.current_event_uuid
             event = self.current_event
 
-        eventFile = open(os.path.join(settings.outputdir, event_uuid+'.json'), 'w')
-        eventFile.write(event.to_json())
-        eventFile.close()
-
+        with open(os.path.join(settings.outputdir, f'{event_uuid}.json'), 'w') as eventFile:
+            eventFile.write(event.to_json())
         self.save_hashes()
 
     def save_manifest(self):
         try:
-            manifestFile = open(os.path.join(settings.outputdir, 'manifest.json'), 'w')
-            manifestFile.write(json.dumps(self.manifest))
-            manifestFile.close()
+            with open(os.path.join(settings.outputdir, 'manifest.json'), 'w') as manifestFile:
+                manifestFile.write(json.dumps(self.manifest))
             print('Manifest saved')
         except Exception as e:
             print(e)
@@ -192,10 +189,9 @@ class FeedGenerator:
         if len(self.attributeHashes) == 0:
             return False
         try:
-            hashFile = open(os.path.join(settings.outputdir, 'hashes.csv'), 'a')
-            for element in self.attributeHashes:
-                hashFile.write('{},{}\n'.format(element[0], element[1]))
-            hashFile.close()
+            with open(os.path.join(settings.outputdir, 'hashes.csv'), 'a') as hashFile:
+                for element in self.attributeHashes:
+                    hashFile.write(f'{element[0]},{element[1]}\n')
             self.attributeHashes = []
             print('Hash saved' + ' '*30)
         except Exception as e:
@@ -204,10 +200,11 @@ class FeedGenerator:
 
     def _addEventToManifest(self, event):
         event_dict = event.to_dict()['Event']
-        tags = []
-        for eventTag in event_dict.get('EventTag', []):
-            tags.append({'name': eventTag['Tag']['name'],
-                         'colour': eventTag['Tag']['colour']})
+        tags = [
+            {'name': eventTag['Tag']['name'], 'colour': eventTag['Tag']['colour']}
+            for eventTag in event_dict.get('EventTag', [])
+        ]
+
         return {
                 'Orgc': event_dict.get('Orgc', []),
                 'Tag': tags,
@@ -256,7 +253,7 @@ class FeedGenerator:
             self.event_name = self.current_event.info
 
     def _get_event_from_id(self, event_uuid):
-        with open(os.path.join(settings.outputdir, '%s.json' % event_uuid), 'r') as f:
+        with open(os.path.join(settings.outputdir, f'{event_uuid}.json'), 'r') as f:
             event_dict = json.load(f)['Event']
             event = MISPEvent()
             event.from_dict(**event_dict)
@@ -279,9 +276,7 @@ class FeedGenerator:
         event.from_dict(**event_dict)
 
         # reference org
-        org_dict = {}
-        org_dict['name'] = settings.org_name
-        org_dict['uuid'] = settings.org_uuid
+        org_dict = {'name': settings.org_name, 'uuid': settings.org_uuid}
         event['Orgc'] = org_dict
 
         # save event on disk

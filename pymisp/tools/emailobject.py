@@ -66,7 +66,7 @@ class EMailObject(AbstractMISPObjectGenerator):
                     return message
         except ValueError as _e:  # Exception
             logger.debug("Email not in .msg format or is a corrupted .msg. Attempting to decode email from other formats.")
-            logger.debug("Error: {} ".format(_e))
+            logger.debug(f"Error: {_e} ")
         try:
             if content_in_bytes[:3] == b'\xef\xbb\xbf':  # utf-8-sig byte-order mark (BOM)
                 eml_bytes = content_in_bytes.decode("utf_8_sig").encode("utf-8")
@@ -98,8 +98,7 @@ class EMailObject(AbstractMISPObjectGenerator):
         msg_obj = openMsg(msg_bytes)
         # msg obj stores the original raw header here
         message, body, attachments = self._extract_msg_objects(msg_obj)
-        eml = self._build_eml(message, body, attachments)
-        return eml
+        return self._build_eml(message, body, attachments)
 
     def _extract_msg_objects(self, msg_obj: MsgObj):
         """Extracts email objects needed to construct an eml from a msg."""
@@ -178,7 +177,7 @@ class EMailObject(AbstractMISPObjectGenerator):
                                                    "subtype": subtype,
                                                    "cid": attch.cid,
                                                    "filename": attch.longFilename})
-        if len(related_content) > 0:
+        if related_content:
             if body.get('text', None) is not None:
                 # Text always goes first in an alternative, but we need the related object first
                 body_text = body.get('text')
@@ -200,9 +199,11 @@ class EMailObject(AbstractMISPObjectGenerator):
         else:
             for mime_dict in body_objects:
                 # If encapsulated then don't attach RTF
-                if self.encapsulated_body is not None:
-                    if mime_dict.get('subtype', "") == "rtf":
-                        continue
+                if (
+                    self.encapsulated_body is not None
+                    and mime_dict.get('subtype', "") == "rtf"
+                ):
+                    continue
                 if isinstance(mime_dict, dict):
                     message.add_alternative(**mime_dict)
         for attch in attachments:  # Add attachments at the end.
@@ -272,8 +273,7 @@ class EMailObject(AbstractMISPObjectGenerator):
                                body.get_content(),
                                comment=comment)
 
-        headers = ["{}: {}".format(k, v) for k, v in message.items()]
-        if headers:
+        if headers := [f"{k}: {v}" for k, v in message.items()]:
             self.add_attribute("header", "\n".join(headers))
 
         if "Date" in message:
@@ -305,8 +305,7 @@ class EMailObject(AbstractMISPObjectGenerator):
         if "User-Agent" in message:
             self.add_attribute("user-agent", message["User-Agent"])
 
-        boundary = message.get_boundary()
-        if boundary:
+        if boundary := message.get_boundary():
             self.add_attribute("mime-boundary", boundary)
 
         if "X-Mailer" in message:
@@ -323,20 +322,20 @@ class EMailObject(AbstractMISPObjectGenerator):
 
         for realname, address in email.utils.getaddresses([data]):
             if address and realname:
-                addresses.append({"value": address, "comment": "{} <{}>".format(realname, address)})
+                addresses.append({"value": address, "comment": f"{realname} <{address}>"})
             elif address:
                 addresses.append({"value": address})
             else:  # parsing failed, skip
                 continue
 
             if realname:
-                display_names.append({"value": realname, "comment": "{} <{}>".format(realname, address)})
+                display_names.append({"value": realname, "comment": f"{realname} <{address}>"})
 
         if addresses:
             self.add_attributes(typ, *addresses)
         if insert_display_names and display_names:
             try:
-                self.add_attributes("{}-display-name".format(typ), *display_names)
+                self.add_attributes(f"{typ}-display-name", *display_names)
             except NewAttributeError:
                 # email object doesn't support display name for all email addrs
                 pass

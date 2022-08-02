@@ -97,12 +97,9 @@ def make_bool(value: Optional[Union[bool, int, str, dict, list]]) -> bool:
     if not value:  # None, 0, '', {}, []
         return False
 
-    if isinstance(value, str):
-        if value == '0':
-            return False
-        return True
-    else:
-        raise PyMISPError('Unable to convert {} to a boolean.'.format(value))
+    if not isinstance(value, str):
+        raise PyMISPError(f'Unable to convert {value} to a boolean.')
+    return value != '0'
 
 
 class MISPOrganisation(AbstractMISP):
@@ -263,7 +260,7 @@ class MISPAttribute(AbstractMISP):
                 self._prepare_new_malware_sample()
 
     def __setattr__(self, name: str, value: Any):
-        if name in ['first_seen', 'last_seen']:
+        if name in {'first_seen', 'last_seen'}:
             _datetime = _make_datetime(value)
 
             if name == 'last_seen' and hasattr(self, 'first_seen') and self.first_seen > _datetime:
@@ -279,7 +276,7 @@ class MISPAttribute(AbstractMISP):
     def hash_values(self, algorithm: str = 'sha512') -> List[str]:
         """Compute the hash of every value for fast lookups"""
         if algorithm not in hashlib.algorithms_available:
-            raise PyMISPError('The algorithm {} is not available for hashing.'.format(algorithm))
+            raise PyMISPError(f'The algorithm {algorithm} is not available for hashing.')
         if '|' in self.type or self.type == 'malware-sample':
             hashes = []
             for v in self.value.split('|'):
@@ -379,7 +376,10 @@ class MISPAttribute(AbstractMISP):
             misp_shadow_attribute = MISPShadowAttribute()
             misp_shadow_attribute.from_dict(**kwargs)
         else:
-            raise PyMISPError("The shadow_attribute is in an invalid format (can be either string, MISPShadowAttribute, or an expanded dict): {}".format(shadow_attribute))
+            raise PyMISPError(
+                f"The shadow_attribute is in an invalid format (can be either string, MISPShadowAttribute, or an expanded dict): {shadow_attribute}"
+            )
+
         self.shadow_attributes.append(misp_shadow_attribute)
         self.edited = True
         return misp_shadow_attribute
@@ -395,7 +395,10 @@ class MISPAttribute(AbstractMISP):
             misp_sighting = MISPSighting()
             misp_sighting.from_dict(**kwargs)
         else:
-            raise PyMISPError("The sighting is in an invalid format (can be either string, MISPShadowAttribute, or an expanded dict): {}".format(sighting))
+            raise PyMISPError(
+                f"The sighting is in an invalid format (can be either string, MISPShadowAttribute, or an expanded dict): {sighting}"
+            )
+
         self.sightings.append(misp_sighting)
         self.edited = True
         return misp_sighting
@@ -403,19 +406,28 @@ class MISPAttribute(AbstractMISP):
     def from_dict(self, **kwargs):
         if 'Attribute' in kwargs:
             kwargs = kwargs['Attribute']
-        if kwargs.get('type') and kwargs.get('category'):
-            if kwargs['type'] not in self.__category_type_mapping[kwargs['category']]:
-                if self.__strict:
-                    raise NewAttributeError('{} and {} is an invalid combination, type for this category has to be in {}'.format(
-                        kwargs.get('type'), kwargs.get('category'), (', '.join(self.__category_type_mapping[kwargs['category']]))))
-                else:
-                    kwargs.pop('category', None)
+        if (
+            kwargs.get('type')
+            and kwargs.get('category')
+            and kwargs['type']
+            not in self.__category_type_mapping[kwargs['category']]
+        ):
+            if self.__strict:
+                raise NewAttributeError(
+                    f"{kwargs.get('type')} and {kwargs.get('category')} is an invalid combination, type for this category has to be in {', '.join(self.__category_type_mapping[kwargs['category']])}"
+                )
+
+            else:
+                kwargs.pop('category', None)
 
         self.type = kwargs.pop('type', None)  # Required
         if self.type is None:
             raise NewAttributeError('The type of the attribute is required.')
         if self.type not in self.known_types:
-            raise NewAttributeError('{} is invalid, type has to be in {}'.format(self.type, (', '.join(self.known_types))))
+            raise NewAttributeError(
+                f"{self.type} is invalid, type has to be in {', '.join(self.known_types)}"
+            )
+
 
         type_defaults = self.__sane_default[self.type]
 
@@ -427,13 +439,12 @@ class MISPAttribute(AbstractMISP):
                 # Faster
                 if sys.version_info >= (3, 7):
                     self.value = datetime.fromisoformat(self.value)
+                elif '+' in self.value or '-' in self.value:
+                    self.value = datetime.strptime(self.value, "%Y-%m-%dT%H:%M:%S.%f%z")
+                elif '.' in self.value:
+                    self.value = datetime.strptime(self.value, "%Y-%m-%dT%H:%M:%S.%f")
                 else:
-                    if '+' in self.value or '-' in self.value:
-                        self.value = datetime.strptime(self.value, "%Y-%m-%dT%H:%M:%S.%f%z")
-                    elif '.' in self.value:
-                        self.value = datetime.strptime(self.value, "%Y-%m-%dT%H:%M:%S.%f")
-                    else:
-                        self.value = datetime.strptime(self.value, "%Y-%m-%dT%H:%M:%S")
+                    self.value = datetime.strptime(self.value, "%Y-%m-%dT%H:%M:%S")
             except ValueError:
                 # Slower, but if the other ones fail, that's a good fallback
                 self.value = parse(self.value)
@@ -444,7 +455,10 @@ class MISPAttribute(AbstractMISP):
             # In case the category key is passed, but None
             self.category = type_defaults['default_category']
         if self.category not in self.__categories:
-            raise NewAttributeError('{} is invalid, category has to be in {}'.format(self.category, (', '.join(self.__categories))))
+            raise NewAttributeError(
+                f"{self.category} is invalid, category has to be in {', '.join(self.__categories)}"
+            )
+
 
         self.to_ids = kwargs.pop('to_ids', bool(int(type_defaults['to_ids'])))
         if self.to_ids is None:
@@ -453,13 +467,19 @@ class MISPAttribute(AbstractMISP):
             self.to_ids = make_bool(self.to_ids)
 
         if not isinstance(self.to_ids, bool):
-            raise NewAttributeError('{} is invalid, to_ids has to be True or False'.format(self.to_ids))
+            raise NewAttributeError(
+                f'{self.to_ids} is invalid, to_ids has to be True or False'
+            )
+
 
         self.distribution = kwargs.pop('distribution', None)
         if self.distribution is not None:
             self.distribution = int(self.distribution)
             if self.distribution not in [0, 1, 2, 3, 4, 5]:
-                raise NewAttributeError('{} is invalid, the distribution has to be in 0, 1, 2, 3, 4, 5'.format(self.distribution))
+                raise NewAttributeError(
+                    f'{self.distribution} is invalid, the distribution has to be in 0, 1, 2, 3, 4, 5'
+                )
+
 
         # other possible values
         if kwargs.get('data'):
@@ -507,7 +527,10 @@ class MISPAttribute(AbstractMISP):
                 raise NewAttributeError('If the distribution is set to sharing group, a sharing group ID is required.')
             elif not self.sharing_group_id:
                 # Cannot be None or 0 either.
-                raise NewAttributeError('If the distribution is set to sharing group, a sharing group ID is required (cannot be {}).'.format(self.sharing_group_id))
+                raise NewAttributeError(
+                    f'If the distribution is set to sharing group, a sharing group ID is required (cannot be {self.sharing_group_id}).'
+                )
+
 
         if kwargs.get('Tag'):
             [self.add_tag(tag) for tag in kwargs.pop('Tag')]
@@ -554,9 +577,11 @@ class MISPAttribute(AbstractMISP):
                 md5_from_filename = name.replace('.filename.txt', '')
             else:
                 md5_from_file = name
-        if not md5_from_filename or not md5_from_file or md5_from_filename != md5_from_file:
-            return False
-        return True
+        return bool(
+            md5_from_filename
+            and md5_from_file
+            and md5_from_filename == md5_from_file
+        )
 
     def __repr__(self):
         if hasattr(self, 'value'):
@@ -724,10 +749,10 @@ class MISPObject(AbstractMISP):
         if name in ['first_seen', 'last_seen']:
             value = _make_datetime(value)
 
-            if name == 'last_seen' and hasattr(self, 'first_seen') and self.first_seen > value:
-                raise PyMISPError('last_seen ({value}) has to be after first_seen ({self.first_seen})')
-            if name == 'first_seen' and hasattr(self, 'last_seen') and self.last_seen < value:
-                raise PyMISPError('first_seen ({value}) has to be before last_seen ({self.last_seen})')
+        if name == 'last_seen' and hasattr(self, 'first_seen') and self.first_seen > value:
+            raise PyMISPError('last_seen ({value}) has to be after first_seen ({self.first_seen})')
+        if name == 'first_seen' and hasattr(self, 'last_seen') and self.last_seen < value:
+            raise PyMISPError('first_seen ({value}) has to be before last_seen ({self.last_seen})')
         super().__setattr__(name, value)
 
     def force_misp_objects_path_custom(self, misp_objects_path_custom: Union[Path, str], object_name: Optional[str] = None):

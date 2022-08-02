@@ -77,9 +77,8 @@ class MicroblogObject(AbstractMISPObjectGenerator):
                 for i in self._parameters.get('type'):
                     if i in type_allowed_values:
                         self.add_attribute('type', value=i)
-            else:
-                if self._parameters['type'] in type_allowed_values:
-                    self.add_attribute('type', value=self._parameters['type'])
+            elif self._parameters['type'] in type_allowed_values:
+                self.add_attribute('type', value=self._parameters['type'])
 
         # State of the microblog post.
         type_allowed_values = ["Informative", "Malicious", "Misinformation", "Disinformation", "Unknown"]
@@ -88,9 +87,8 @@ class MicroblogObject(AbstractMISPObjectGenerator):
                 for i in self._parameters.get('state'):
                     if i in type_allowed_values:
                         self.add_attribute('state', value=i)
-            else:
-                if self._parameters['state'] in type_allowed_values:
-                    self.add_attribute('state', value=self._parameters['state'])
+            elif self._parameters['state'] in type_allowed_values:
+                self.add_attribute('state', value=self._parameters['state'])
 
         # Username who posted the microblog post (without the @ prefix).
         if 'username' in self._parameters:
@@ -103,9 +101,8 @@ class MicroblogObject(AbstractMISPObjectGenerator):
                 for i in self._parameters.get('verified-username'):
                     if i in type_allowed_values:
                         self.add_attribute('verified-username', value=i)
-            else:
-                if self._parameters['verified-username'] in type_allowed_values:
-                    self.add_attribute('verified-username', value=self._parameters['verified-username'])
+            elif self._parameters['verified-username'] in type_allowed_values:
+                self.add_attribute('verified-username', value=self._parameters['verified-username'])
 
         # embedded-link.
         if 'embedded-link' in self._parameters:

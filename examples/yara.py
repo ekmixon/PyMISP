@@ -13,9 +13,7 @@ def init(url, key):
 
 def get_yara(m, event_id, out=None):
     ok, rules = m.get_yara(event_id)
-    if not ok:
-        print(rules)
-    elif out is None:
+    if not ok or out is None:
         print(rules)
     else:
         with open(out, 'w') as f:

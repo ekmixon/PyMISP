@@ -63,9 +63,7 @@ def get_uuid_or_id_from_abstract_misp(obj: Union[AbstractMISP, int, str, UUID, d
         return obj.org_uuid
 
     # at this point, we must have an AbstractMISP
-    if 'uuid' in obj:  # type: ignore
-        return obj['uuid']  # type: ignore
-    return obj['id']  # type: ignore
+    return obj['uuid'] if 'uuid' in obj else obj['id']
 
 
 def register_user(misp_url: str, email: str,
@@ -247,7 +245,10 @@ class PyMISP:
         r = requests.get('https://raw.githubusercontent.com/MISP/MISP/2.4/VERSION.json')
         if r.status_code == 200:
             master_version = json.loads(r.text)
-            return {'version': '{}.{}.{}'.format(master_version['major'], master_version['minor'], master_version['hotfix'])}
+            return {
+                'version': f"{master_version['major']}.{master_version['minor']}.{master_version['hotfix']}"
+            }
+
         return {'error': 'Impossible to retrieve the version of the master branch.'}
 
     def update_misp(self) -> Dict:
@@ -722,12 +723,13 @@ class PyMISP:
                     to_return['attributes'].append(a)
             return to_return
 
-        if ('errors' in new_attribute and new_attribute['errors'][0] == 403
-                and new_attribute['errors'][1]['message'] == 'You do not have permission to do that.'):
-            # At this point, we assume the user tried to add an attribute on an event they don't own
-            # Re-try with a proposal
-            if isinstance(attribute, (MISPAttribute, dict)):
-                return self.add_attribute_proposal(event_id, attribute, pythonify)  # type: ignore
+        if (
+            'errors' in new_attribute
+            and new_attribute['errors'][0] == 403
+            and new_attribute['errors'][1]['message']
+            == 'You do not have permission to do that.'
+        ) and isinstance(attribute, (MISPAttribute, dict)):
+            return self.add_attribute_proposal(event_id, attribute, pythonify)  # type: ignore
         if not (self.global_pythonify or pythonify) or 'errors' in new_attribute:
             return new_attribute
         a = MISPAttribute()
@@ -747,12 +749,14 @@ class PyMISP:
             aid = get_uuid_or_id_from_abstract_misp(attribute_id)
         r = self._prepare_request('POST', f'attributes/edit/{aid}', data=attribute)
         updated_attribute = self._check_json_response(r)
-        if 'errors' in updated_attribute:
-            if (updated_attribute['errors'][0] == 403
-                    and updated_attribute['errors'][1]['message'] == 'You do not have permission to do that.'):
-                # At this point, we assume the user tried to update an attribute on an event they don't own
-                # Re-try with a proposal
-                return self.update_attribute_proposal(aid, attribute, pythonify)
+        if 'errors' in updated_attribute and (
+            updated_attribute['errors'][0] == 403
+            and updated_attribute['errors'][1]['message']
+            == 'You do not have permission to do that.'
+        ):
+            # At this point, we assume the user tried to update an attribute on an event they don't own
+            # Re-try with a proposal
+            return self.update_attribute_proposal(aid, attribute, pythonify)
         if not (self.global_pythonify or pythonify) or 'errors' in updated_attribute:
             return updated_attribute
         a = MISPAttribute()
@@ -1139,7 +1143,7 @@ class PyMISP:
             raise PyMISPError(f"The taxonomy {t.name} is not enabled.")
         elif not t['Taxonomy']['enabled']:
             raise PyMISPError(f"The taxonomy {t['Taxonomy']['name']} is not enabled.")
-        url = urljoin(self.root_url, 'taxonomies/addTag/{}'.format(taxonomy_id))
+        url = urljoin(self.root_url, f'taxonomies/addTag/{taxonomy_id}')
         response = self._prepare_request('POST', url)
         return self._check_json_response(response)
 
@@ -1494,8 +1498,7 @@ class PyMISP:
             raise PyMISPError('You are not able to publish a default galaxy cluster')
         cluster_id = get_uuid_or_id_from_abstract_misp(galaxy_cluster)
         r = self._prepare_request('POST', f'galaxy_clusters/publish/{cluster_id}')
-        response = self._check_json_response(r)
-        return response
+        return self._check_json_response(r)
 
     def fork_galaxy_cluster(self, galaxy: Union[MISPGalaxy, int, str, UUID], galaxy_cluster: MISPGalaxyCluster, pythonify: bool = False) -> Union[Dict, MISPGalaxyCluster]:
         """Forks an existing galaxy cluster, creating a new one with matching attributes
@@ -1544,8 +1547,7 @@ class PyMISP:
         :param galaxy_cluster_relation: The MISPGalaxyClusterRelation to add
         """
         r = self._prepare_request('POST', 'galaxy_cluster_relations/add/', data=galaxy_cluster_relation)
-        cluster_rel_j = self._check_json_response(r)
-        return cluster_rel_j
+        return self._check_json_response(r)
 
     def update_galaxy_cluster_relation(self, galaxy_cluster_relation: MISPGalaxyClusterRelation) -> Dict:
         """Update a galaxy cluster relation
@@ -1554,8 +1556,7 @@ class PyMISP:
         """
         cluster_relation_id = get_uuid_or_id_from_abstract_misp(galaxy_cluster_relation)
         r = self._prepare_request('POST', f'galaxy_cluster_relations/edit/{cluster_relation_id}', data=galaxy_cluster_relation)
-        cluster_rel_j = self._check_json_response(r)
-        return cluster_rel_j
+        return self._check_json_response(r)
 
     def delete_galaxy_cluster_relation(self, galaxy_cluster_relation: Union[MISPGalaxyClusterRelation, int, str, UUID]) -> Dict:
         """Delete a galaxy cluster relation
@@ -1564,8 +1565,7 @@ class PyMISP:
         """
         cluster_relation_id = get_uuid_or_id_from_abstract_misp(galaxy_cluster_relation)
         r = self._prepare_request('POST', f'galaxy_cluster_relations/delete/{cluster_relation_id}')
-        cluster_rel_j = self._check_json_response(r)
-        return cluster_rel_j
+        return self._check_json_response(r)
 
     # ## END Galaxy ###
 
@@ -2086,22 +2086,21 @@ class PyMISP:
         user_id = get_uuid_or_id_from_abstract_misp(user)
         r = self._prepare_request('GET', f'users/view/{user_id}')
         user_j = self._check_json_response(r)
-        if not (self.global_pythonify or pythonify) or 'errors' in user_j:
+        if not self.global_pythonify and not pythonify or 'errors' in user_j:
             return user_j
         u = MISPUser()
         u.from_dict(**user_j)
         if not expanded:
             return u
-        else:
-            role = MISPRole()
-            role.from_dict(**user_j['Role'])
-            usersettings = []
-            if user_j['UserSetting']:
-                for name, value in user_j['UserSetting'].items():
-                    us = MISPUserSetting()
-                    us.from_dict(**{'name': name, 'value': value})
-                    usersettings.append(us)
-            return u, role, usersettings
+        role = MISPRole()
+        role.from_dict(**user_j['Role'])
+        usersettings = []
+        if user_j['UserSetting']:
+            for name, value in user_j['UserSetting'].items():
+                us = MISPUserSetting()
+                us.from_dict(**{'name': name, 'value': value})
+                usersettings.append(us)
+        return u, role, usersettings
 
     def add_user(self, user: MISPUser, pythonify: bool = False) -> Union[Dict, MISPUser]:
         """Add a new user

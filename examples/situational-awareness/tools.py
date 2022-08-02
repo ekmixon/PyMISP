@@ -19,10 +19,12 @@ from dateutil.parser import parse
 
 
 def selectInRange(Events, begin=None, end=None):
-    inRange = []
-    for i, Event in Events.iterrows():
-        if date_tools.dateInRange(parse(Event['date']), begin, end):
-            inRange.append(Event.tolist())
+    inRange = [
+        Event.tolist()
+        for i, Event in Events.iterrows()
+        if date_tools.dateInRange(parse(Event['date']), begin, end)
+    ]
+
     inRange = pandas.DataFrame(inRange)
     temp = Events.columns.tolist()
     if inRange.empty:
@@ -45,10 +47,7 @@ def getTaxonomies(dataframe):
                 count = count + 1
         if empty is True:
             notInTaxo.append(taxonomy)
-    if dataframe.empty:
-        emptyOther = True
-    else:
-        emptyOther = False
+    emptyOther = bool(dataframe.empty)
     for taxonomy in notInTaxo:
         taxonomies.remove(taxonomy)
     return taxonomies, emptyOther
@@ -110,23 +109,25 @@ def createDictTagsColour(colourDict, tags):
 def createTagsPlotStyle(dataframe, colourDict, taxonomy=None):
     colours = []
     if taxonomy is not None:
-        for it in dataframe.iterrows():
-            if it[0].startswith(taxonomy):
-                colours.append(colourDict[it[0]])
-    else:
-        for it in dataframe.iterrows():
-            colours.append(colourDict[it[0]])
+        colours.extend(
+            colourDict[it[0]]
+            for it in dataframe.iterrows()
+            if it[0].startswith(taxonomy)
+        )
 
-    style = Style(background='transparent',
-                  plot_background='#eeeeee',
-                  foreground='#111111',
-                  foreground_strong='#111111',
-                  foreground_subtle='#111111',
-                  opacity='.6',
-                  opacity_hover='.9',
-                  transition='400ms ease-in',
-                  colors=tuple(colours))
-    return style
+    else:
+        colours.extend(colourDict[it[0]] for it in dataframe.iterrows())
+    return Style(
+        background='transparent',
+        plot_background='#eeeeee',
+        foreground='#111111',
+        foreground_strong='#111111',
+        foreground_subtle='#111111',
+        opacity='.6',
+        opacity_hover='.9',
+        transition='400ms ease-in',
+        colors=tuple(colours),
+    )
 
 # ############### Formatting  ################
 
@@ -141,9 +142,7 @@ def eventsListBuildFromList(filename):
     while end != s_len:
         Event, end = decoder.raw_decode(s, idx=end)
         Events.append(Event)
-    data = []
-    for e in Events:
-        data.append(pandas.DataFrame.from_dict(e, orient='index'))
+    data = [pandas.DataFrame.from_dict(e, orient='index') for e in Events]
     Events = pandas.concat(data)
     for it in range(Events['attribute_count'].size):
         if Events['attribute_count'][it] is None:
@@ -172,10 +171,10 @@ def attributesListBuild(events):
 def tagsListBuild(Events):
     Tags = []
     if 'Tag' in Events.columns:
-        for Tag in Events['Tag']:
-            if type(Tag) is not list:
-                continue
-            Tags.append(pandas.DataFrame(Tag))
+        Tags.extend(
+            pandas.DataFrame(Tag) for Tag in Events['Tag'] if type(Tag) is list
+        )
+
     if Tags:
         Tags = pandas.concat(Tags)
         columnDate = buildNewColumn(Tags.index, Events['date'])
@@ -306,9 +305,7 @@ def tagsToPolyChart(dataframe, split, colourDict, taxonomies, emptyOther, order)
     for taxonomy in taxonomies:
         for it in dataframe.iterrows():
             if it[0].startswith(taxonomy):
-                points = []
-                for i in range(split):
-                    points.append((i, it[1][i]))
+                points = [(i, it[1][i]) for i in range(split)]
                 color = colourDict[it[0]]
                 label = re.sub(taxonomy + ':', '', it[0])
                 points = numpy.array(points)
@@ -343,9 +340,7 @@ def tagsToPolyChart(dataframe, split, colourDict, taxonomies, emptyOther, order)
     if not emptyOther:
         for it in dataframe.iterrows():
             points = []
-            for i in range(split):
-                points.append((i, it[1][i]))
-
+            points.extend((i, it[1][i]) for i in range(split))
             color = colourDict[it[0]]
             label = it[0]
             points = numpy.array(points)
@@ -377,8 +372,11 @@ def tagsToPolyChart(dataframe, split, colourDict, taxonomies, emptyOther, order)
 
 
 def createVisualisation(taxonomies):
-    chain = '<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<link rel="stylesheet" href="style2.css">\n\t</head>\n\t<body>'
-    chain = chain + '<table>'
+    chain = (
+        '<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<link rel="stylesheet" href="style2.css">\n\t</head>\n\t<body>'
+        + '<table>'
+    )
+
     for taxonomy in taxonomies:
         chain = chain + '<tr><td><object type="image/svg+xml" data="plot\\' + taxonomy + '.svg"></object></td><td><img src="plotlib\\' + taxonomy + '.png" alt="graph" /></td><td><object type="image/svg+xml" data="plot\\' + taxonomy + '_trend.svg"></object></td></tr>\n'
 

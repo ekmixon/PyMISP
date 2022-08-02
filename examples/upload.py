@@ -29,11 +29,7 @@ if __name__ == '__main__':
         print('invalid upload path (must be file or dir)')
         exit(0)
 
-    if args.is_malware:
-        arg_type = 'malware-sample'
-    else:
-        arg_type = 'attachment'
-
+    arg_type = 'malware-sample' if args.is_malware else 'attachment'
     # Create attributes
     attributes = []
     for f in files:

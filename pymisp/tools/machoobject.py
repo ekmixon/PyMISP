@@ -24,9 +24,7 @@ logger = logging.getLogger('pymisp')
 def make_macho_objects(lief_parsed: lief.Binary, misp_file: FileObject, standalone: bool = True, default_attributes_parameters: dict = {}):
     macho_object = MachOObject(parsed=lief_parsed, standalone=standalone, default_attributes_parameters=default_attributes_parameters)
     misp_file.add_reference(macho_object.uuid, 'includes', 'MachO indicators')
-    macho_sections = []
-    for s in macho_object.sections:
-        macho_sections.append(s)
+    macho_sections = list(macho_object.sections)
     return misp_file, macho_object, macho_sections
 
 
@@ -45,7 +43,10 @@ class MachOObject(AbstractMISPObjectGenerator):
             elif isinstance(pseudofile, bytes):
                 self.__macho = lief.MachO.parse(raw=pseudofile)
             else:
-                raise InvalidMISPObject('Pseudo file can be BytesIO or bytes got {}'.format(type(pseudofile)))
+                raise InvalidMISPObject(
+                    f'Pseudo file can be BytesIO or bytes got {type(pseudofile)}'
+                )
+
         elif filepath:
             self.__macho = lief.MachO.parse(filepath)
         elif parsed:
@@ -53,7 +54,7 @@ class MachOObject(AbstractMISPObjectGenerator):
             if isinstance(parsed, lief.MachO.Binary):
                 self.__macho = parsed
             else:
-                raise InvalidMISPObject('Not a lief.MachO.Binary: {}'.format(type(parsed)))
+                raise InvalidMISPObject(f'Not a lief.MachO.Binary: {type(parsed)}')
         self.generate_attributes()
 
     def generate_attributes(self):
@@ -65,11 +66,9 @@ class MachOObject(AbstractMISPObjectGenerator):
         # Sections
         self.sections = []
         if self.__macho.sections:
-            pos = 0
-            for section in self.__macho.sections:
+            for pos, section in enumerate(self.__macho.sections):
                 s = MachOSectionObject(section, standalone=self._standalone, default_attributes_parameters=self._default_attributes_parameters)
-                self.add_reference(s.uuid, 'includes', 'Section {} of MachO'.format(pos))
-                pos += 1
+                self.add_reference(s.uuid, 'includes', f'Section {pos} of MachO')
                 self.sections.append(s)
         self.add_attribute('number-sections', value=len(self.sections))
 

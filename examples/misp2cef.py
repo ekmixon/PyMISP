@@ -27,19 +27,21 @@ def make_cef(event):
       else:
         value = attr["value"]
       response = "{} host CEF:0|{}|{}|{}|{}|{}|{}|msg={} customerURI={} externalId={} {}={}".format(
-                      datetime.datetime.fromtimestamp(int(attr["timestamp"])).strftime("%b %d %H:%M:%S"),
-                      cefconfig["Device_Vendor"],
-                      cefconfig["Device_Product"],
-                      cefconfig["Device_Version"],
-                      attr["category"],
-                      attr["category"],
-                      cefconfig["Default_Severity"],
-                      event["info"].replace("\\","\\\\").replace("=","\\=").replace('\n','\\n') + "(MISP Event #" + event["id"] + ")",
-                      misp_url + 'events/view/' + event["id"],
-                      attr["uuid"],
-                      cefmapping[attr["type"]],
-                      value,
-               )
+          datetime.datetime.fromtimestamp(int(
+              attr["timestamp"])).strftime("%b %d %H:%M:%S"),
+          cefconfig["Device_Vendor"],
+          cefconfig["Device_Product"],
+          cefconfig["Device_Version"],
+          attr["category"],
+          attr["category"],
+          cefconfig["Default_Severity"],
+          event["info"].replace("\\", "\\\\").replace("=", "\\=").replace(
+              '\n', '\\n') + "(MISP Event #" + event["id"] + ")",
+          f'{misp_url}events/view/' + event["id"],
+          attr["uuid"],
+          cefmapping[attr["type"]],
+          value,
+      )
       print(str(bytes(response, 'utf-8'), 'utf-8'))
                         
 
@@ -52,9 +54,8 @@ def echeck(r):
   if r.get('errors'):
     if r.get('message') == 'No matches.':
       return
-    else:
-      print(r['errors'])
-      sys.exit(1)
+    print(r['errors'])
+    sys.exit(1)
 
 
 def find_events():

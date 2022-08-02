@@ -53,17 +53,14 @@ def search_sightings(misp, timestamp, timestamp_now):
                         attribute = misp.get_attribute(attribute_id)
                     except Exception as e:
                         if module_DEBUG:
-                            print("Unable to fetch attribute UUID for ID %s " % attribute_id)
+                            print(f"Unable to fetch attribute UUID for ID {attribute_id} ")
                         continue
 
                     if 'Attribute' in attribute and 'uuid' in attribute['Attribute']:
                         attribute_uuid = attribute['Attribute']['uuid']
                         completed_sightings.append({'attribute_uuid': attribute_uuid, 'date_sighting': sighting['date_sighting'], 'source': sighting['source'], 'type': sighting['type'], 'uuid': sighting['uuid']})
-                    else:
-                        if module_DEBUG:
-                            print("No information returned for attribute ID %s " % attribute_id)
-                        continue
-
+                    elif module_DEBUG:
+                        print(f"No information returned for attribute ID {attribute_id} ")
     return completed_sightings
 
 
@@ -71,26 +68,24 @@ def sync_sightings(misp, misp_authoritive, found_sightings, verify_before_push, 
     '''
         Walk through all the sightings
     '''
-    if found_sightings is not None:
-        for sighting in found_sightings:
-            attribute_uuid = sighting['attribute_uuid']
-            date_sighting = sighting['date_sighting']
-            source = sighting['source']
-            if not source:
-                source = custom_sighting_text
-            type = sighting['type']
+    if found_sightings is None:
+        return False
+    for sighting in found_sightings:
+        attribute_uuid = sighting['attribute_uuid']
+        date_sighting = sighting['date_sighting']
+        source = sighting['source']
+        if not source:
+            source = custom_sighting_text
+        type = sighting['type']
 
             # Fail safe
-            if verify_before_push:
-                if sighting_exists(misp_authoritive, sighting):
-                    continue
-                else:
-                    continue
-            else:
-                push_sighting(misp_authoritive, attribute_uuid, date_sighting, source, type)
+        if verify_before_push:
+            if not sighting_exists(misp_authoritive, sighting):
                 continue
-        return True
-    return False
+        else:
+            push_sighting(misp_authoritive, attribute_uuid, date_sighting, source, type)
+            continue
+    return True
 
 
 def push_sighting(misp_authoritive, attribute_uuid, date_sighting, source, type):
@@ -101,11 +96,11 @@ def push_sighting(misp_authoritive, attribute_uuid, date_sighting, source, type)
         try:
             misp_authoritive.sighting(uuid=attribute_uuid, source=source, type=type, timestamp=date_sighting)
             if module_DEBUG:
-                print("Pushed sighting for %s on %s" % (attribute_uuid, date_sighting))
+                print(f"Pushed sighting for {attribute_uuid} on {date_sighting}")
             return True
         except Exception as e:
             if module_DEBUG:
-                print("Unable to update attribute %s " % (attribute_uuid))
+                print(f"Unable to update attribute {attribute_uuid} ")
             return False
 
 
@@ -128,7 +123,10 @@ def set_drift_timestamp(drift_timestamp, drift_timestamp_path):
             f.write(str(drift_timestamp))
         return True
     except IOError:
-        sys.exit("Unable to write drift_timestamp %s to %s" % (drift_timestamp, drift_timestamp_path))
+        sys.exit(
+            f"Unable to write drift_timestamp {drift_timestamp} to {drift_timestamp_path}"
+        )
+
         return False
 
 
@@ -139,10 +137,7 @@ def get_drift_timestamp(drift_timestamp_path):
     try:
         with open(drift_timestamp_path) as f:
             drift = f.read()
-            if drift:
-                drift = int(float(drift))
-            else:
-                drift = 0
+            drift = int(float(drift)) if drift else 0
     except IOError:
         drift = 0
 
@@ -164,7 +159,7 @@ if __name__ == '__main__':
         if sync_sightings(misp, misp_authoritive, found_sightings, verify_before_push=False, custom_sighting_text="Custom Sighting"):
             set_drift_timestamp(timestamp_now, drift_timestamp_path)
             if module_DEBUG:
-                print("Sighting drift file updated to %s " % (timestamp_now))
+                print(f"Sighting drift file updated to {timestamp_now} ")
         else:
             sys.exit("Unable to sync sync_sightings")
     else:

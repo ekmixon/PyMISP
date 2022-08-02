@@ -112,13 +112,11 @@ class VMRayAutomation:
 
     @staticmethod
     def _setting_disabled(value: str) -> bool:
-        return value.lower() in ["no", "false"]
+        return value.lower() in {"no", "false"}
 
     @staticmethod
     def _services_port(value: int) -> bool:
-        if value == 0:
-            return 6666
-        return value
+        return 6666 if value == 0 else value
 
     @staticmethod
     def services_url(value: str) -> bool:

@@ -55,7 +55,7 @@ def get_event(event_id):
         # attribute_count = event_core["attribute_count"]
         attribute = event_core["Attribute"]
 
-        for attribute in event_core["Attribute"]:
+        for attribute in attribute:
             if app_ids_only and not attribute["to_ids"]:
                 continue
 
@@ -65,17 +65,16 @@ def get_event(event_id):
                 app_printcomment = False
                 if attribute["type"] == "ip-dst" and app_ip_dst:
                     network_ip_dst.append([build_entry(value, event_id, title, "ip-dst")])
+            elif attribute["type"] == "ip-src" and app_ip_src:
+                network_ip_src.append([build_entry(value, event_id, title, "ip-src")])
+            elif attribute["type"] == "ip-dst" and app_ip_dst:
+                network_ip_dst.append([build_entry(value, event_id, title, "ip-dst")])
+            elif attribute["type"] == "domain" and app_domain:
+                network_domain.append([build_entry(value, event_id, title, "domain")])
+            elif attribute["type"] == "hostname" and app_hostname:
+                network_hostname.append([build_entry(value, event_id, title, "hostname")])
             else:
-                if attribute["type"] == "ip-src" and app_ip_src:
-                    network_ip_src.append([build_entry(value, event_id, title, "ip-src")])
-                elif attribute["type"] == "ip-dst" and app_ip_dst:
-                    network_ip_dst.append([build_entry(value, event_id, title, "ip-dst")])
-                elif attribute["type"] == "domain" and app_domain:
-                    network_domain.append([build_entry(value, event_id, title, "domain")])
-                elif attribute["type"] == "hostname" and app_hostname:
-                    network_hostname.append([build_entry(value, event_id, title, "hostname")])
-                else:
-                    continue
+                continue
     else:
         print("Not a valid ID")
         return
@@ -94,9 +93,9 @@ def build_entry(value, event_id, title, source):
 
     if app_printcomment:
         if app_printtitle:
-            return "%s # Event: %s / %s (from %s) " % (value, event_id, title, source)
+            return f"{value} # Event: {event_id} / {title} (from {source}) "
         else:
-            return "%s # Event: %s (from %s) " % (value, event_id, source)
+            return f"{value} # Event: {event_id} (from {source}) "
     else:
         return value
 
@@ -115,7 +114,7 @@ def print_events():
                 firsthost = False
             else:
                 print(" or ")
-            print("host %s" % ip[0])
+            print(f"host {ip[0]}")
     else:
         if app_ip_src:
             for ip in network_ip_src:

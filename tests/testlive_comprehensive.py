@@ -31,12 +31,11 @@ try:
     from pymisp.tools import CSVLoader, DomainIPObject, ASNObject, GenericObjectGenerator
     from pymisp.exceptions import MISPServerError
 except ImportError:
-    if sys.version_info < (3, 6):
-        print('This test suite requires Python 3.6+, breaking.')
-        sys.exit(0)
-    else:
+    if sys.version_info >= (3, 6):
         raise
 
+    print('This test suite requires Python 3.6+, breaking.')
+    sys.exit(0)
 try:
     from keys import url, key  # type: ignore
     verifycert = False
@@ -132,7 +131,7 @@ class TestComprehensive(unittest.TestCase):
         first_event.threat_level_id = ThreatLevel.low
         first_event.analysis = Analysis.completed
         first_event.set_date("2017-12-31")
-        first_event.add_attribute('text', 'FIRST_EVENT' + str(uuid4()))
+        first_event.add_attribute('text', f'FIRST_EVENT{str(uuid4())}')
         first_event.attributes[0].add_tag('admin_only')
         first_event.attributes[0].add_tag('tlp:white___test')
         first_event.add_attribute('text', str(uuid4()))
@@ -144,7 +143,7 @@ class TestComprehensive(unittest.TestCase):
         second_event.threat_level_id = ThreatLevel.medium
         second_event.analysis = Analysis.ongoing
         second_event.set_date("Aug 18 2018")
-        second_event.add_attribute('text', 'SECOND_EVENT' + str(uuid4()))
+        second_event.add_attribute('text', f'SECOND_EVENT{str(uuid4())}')
         second_event.attributes[0].add_tag('tlp:white___test')
         second_event.add_attribute('ip-dst', '1.1.1.1')
         second_event.attributes[1].add_tag('tlp:amber___test')
@@ -158,7 +157,7 @@ class TestComprehensive(unittest.TestCase):
         third_event.analysis = Analysis.initial
         third_event.set_date("Jun 25 2018")
         third_event.add_tag('tlp:white___test')
-        third_event.add_attribute('text', 'THIRD_EVENT' + str(uuid4()))
+        third_event.add_attribute('text', f'THIRD_EVENT{str(uuid4())}')
         third_event.attributes[0].add_tag('tlp:amber___test')
         third_event.attributes[0].add_tag('foo_double___test')
         third_event.add_attribute('ip-src', '8.8.8.8')
@@ -795,7 +794,11 @@ class TestComprehensive(unittest.TestCase):
             self.assertEqual(len(events), 2)
 
             # test like search
-            events = self.user_misp_connector.search(timestamp=timeframe, value='%{}%'.format(first.attributes[0].value.split('-')[2]))
+            events = self.user_misp_connector.search(
+                timestamp=timeframe,
+                value=f"%{first.attributes[0].value.split('-')[2]}%",
+            )
+
             self.assertEqual(len(events), 1)
             self.assertEqual(events[0].id, first.id)
             events = self.user_misp_connector.search(timestamp=timeframe, eventinfo='%bar blah%')

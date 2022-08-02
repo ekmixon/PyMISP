@@ -27,5 +27,5 @@ if __name__ == '__main__':
     if args.attribute is None:
         args.attribute = 3000
 
-    for i in range(args.limit):
+    for _ in range(args.limit):
         tools.create_massive_dummy_events(misp, args.attribute)

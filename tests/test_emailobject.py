@@ -114,10 +114,9 @@ class TestEmailObject(unittest.TestCase):
         except Exception as _e:
             found_error = _e
         if found_error is not None:
-            self.fail('Error {} raised when parsing test email {} which tests against {}. It should not have raised an error.'.format(
-                type(found_error),
-                path,
-                test_type))
+            self.fail(
+                f'Error {type(found_error)} raised when parsing test email {path} which tests against {test_type}. It should not have raised an error.'
+            )
 
     def test_random_binary_blob(self):
         """Email parser fails correctly on random binary blob."""

@@ -13,11 +13,7 @@ class AbstractMISPObjectGenerator(MISPObject):
     def _detect_epoch(self, timestamp: Union[str, int, float]) -> bool:
         try:
             tmp = float(timestamp)
-            if tmp < 30000000:
-                # Assuming the user doesn't want to report anything before datetime(1970, 12, 14, 6, 20)
-                # The date is most probably in the format 20180301
-                return False
-            return True
+            return tmp >= 30000000
         except ValueError:
             return False
 
@@ -44,17 +40,20 @@ class AbstractMISPObjectGenerator(MISPObject):
 
     def generate_attributes(self):
         """Contains the logic where all the values of the object are gathered"""
-        if hasattr(self, '_parameters'):
-            for object_relation in self._definition['attributes']:
-                value = self._parameters.pop(object_relation, None)
-                if not value:
-                    continue
-                if isinstance(value, dict):
-                    self.add_attribute(object_relation, **value)
-                elif isinstance(value, list):
-                    self.add_attributes(object_relation, *value)
-                else:
-                    # Assume it is the value only
-                    self.add_attribute(object_relation, value=value)
-            if self._strict and self._known_template and self._parameters:
-                raise InvalidMISPObject('Some object relations are unknown in the template and could not be attached: {}'.format(', '.join(self._parameters)))
+        if not hasattr(self, '_parameters'):
+            return
+        for object_relation in self._definition['attributes']:
+            value = self._parameters.pop(object_relation, None)
+            if not value:
+                continue
+            if isinstance(value, dict):
+                self.add_attribute(object_relation, **value)
+            elif isinstance(value, list):
+                self.add_attributes(object_relation, *value)
+            else:
+                # Assume it is the value only
+                self.add_attribute(object_relation, value=value)
+        if self._strict and self._known_template and self._parameters:
+            raise InvalidMISPObject(
+                f"Some object relations are unknown in the template and could not be attached: {', '.join(self._parameters)}"
+            )
